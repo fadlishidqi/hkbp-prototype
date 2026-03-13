@@ -24,14 +24,14 @@ const fontHeading = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL('https://hkbp-prototype.vercel.app'), // Domain deployment Vercel
   title: {
-    default: "HUT ke-165 HKBP | Konser Perayaan", // Judul halaman utama
+    default: "HUT ke-165 HKBP", // Judul halaman utama
     template: "%s | HUT 165 HKBP", // Otomatis menambah nama brand di halaman lain
   },
-  description: "Jadilah bagian dari momen bersejarah! Konser Perayaan HUT ke-165 Huria Kristen Batak Protestan di 165 kota. Pesan tiket Anda sekarang.",
-  keywords: ["HKBP", "HUT HKBP 165", "Konser HKBP", "Gereja HKBP", "Tiket Konser HKBP"],
+  description: "Portal resmi perayaan HUT ke-165 HKBP. Temukan informasi terbaru seputar kegiatan panitia, berita terkini, dan jadwal tur konser di 65 kota.",
+  keywords: ["HKBP", "HUT HKBP 165", "Konser HKBP", "Berita HKBP", "Jadwal Konser HKBP", "Tiket Konser HKBP"],
   openGraph: {
-    title: "Konser Perayaan HUT ke-165 HKBP",
-    description: "Charity concert di 165 kota. Seluruh hasil disumbangkan untuk Puncak HUT ke-165 HKBP, Oktober 2026. Amankan tiketmu sekarang!",
+    title: "HUT ke-165 HKBP",
+    description: "Website resmi HUT ke-165 HKBP. Dapatkan update berita kegiatan kepanitiaan dan info lengkap tur konser di 65 kota di Indonesia.",
     url: "https://hkbp-prototype.vercel.app",
     siteName: "HUT 165 HKBP",
     images: [
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "HUT ke-165 HKBP",
-    description: "Charity concert di 165 kota untuk Puncak HUT ke-165 HKBP. Amankan tiketmu sekarang!",
+    description: "Website resmi HUT ke-165 HKBP. Dapatkan update berita kegiatan road to 165 dan informasi tur konser di 65 kota di Indonesia.",
     images: ["/og-image.png"],
   },
 };
