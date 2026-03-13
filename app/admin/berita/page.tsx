@@ -1,25 +1,168 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { UploadButton } from '@/lib/uploadthing';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
+} from '@/components/ui/table';
+import { Trash2, ImageOff, Newspaper, PlusCircle, Type, Image, GripVertical } from 'lucide-react';
 
-// Tipe data untuk blok konten dinamis (file tidak diperlukan lagi, kita langsung simpan url/content)
+// dnd-kit
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// ─── Types ───────────────────────────────────────────────
 type Block = { id: string; type: 'text' | 'image'; content: string };
 
+const uploadAppearance = {
+  button:
+    'ut-ready:bg-primary ut-uploading:bg-primary/80 after:bg-primary/50 w-full rounded-md text-sm font-medium h-10 px-4',
+  container:
+    'w-full border border-dashed border-input rounded-lg p-6 flex-col gap-2 bg-muted/30',
+  allowedContent: 'text-muted-foreground text-xs',
+};
+
+// ─── Sortable Block Item ──────────────────────────────────
+function SortableBlock({
+  block,
+  canRemove,
+  onRemove,
+  onUpdate,
+}: {
+  block: Block;
+  canRemove: boolean;
+  onRemove: (id: string) => void;
+  onUpdate: (id: string, content: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: block.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex gap-3 items-start bg-muted/30 p-4 rounded-lg border"
+    >
+      {/* Drag Handle */}
+      <button
+        type="button"
+        className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+
+      {/* Badge tipe */}
+      <Badge
+        variant={block.type === 'text' ? 'default' : 'secondary'}
+        className="mt-1 shrink-0 flex items-center gap-1"
+      >
+        {block.type === 'text' ? (
+          <><Type className="h-3 w-3" /> TEKS</>
+        ) : (
+          <><Image className="h-3 w-3" /> GAMBAR</>
+        )}
+      </Badge>
+
+      {/* Konten */}
+      <div className="flex-1">
+        {block.type === 'text' ? (
+          <Textarea
+            placeholder="Tulis paragraf di sini..."
+            value={block.content}
+            onChange={(e) => onUpdate(block.id, e.target.value)}
+            className="min-h-[100px] bg-background"
+            required
+          />
+        ) : block.content ? (
+          <div className="relative w-max">
+            <img src={block.content} alt="Block" className="h-28 rounded-lg shadow" />
+            <Button
+              type="button"
+              size="icon"
+              variant="destructive"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+              onClick={() => onUpdate(block.id, '')}
+            >
+              ✕
+            </Button>
+          </div>
+        ) : (
+          <UploadButton
+            endpoint="imageUploader"
+            onClientUploadComplete={(res) => onUpdate(block.id, res[0].url)}
+            onUploadError={(error: Error) => alert(`Gagal upload: ${error.message}`)}
+            appearance={{
+              ...uploadAppearance,
+              container:
+                'w-full border border-dashed border-input rounded-lg p-4 flex-col gap-2 bg-background',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Hapus */}
+      {canRemove && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={() => onRemove(block.id)}
+        >
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────
 export default function KelolaBerita() {
   const [berita, setBerita] = useState<any[]>([]);
   const [judul, setJudul] = useState('');
   const [slug, setSlug] = useState('');
-  
-  // Karena langsung diupload, kita simpan URL-nya, bukan filenya
   const [coverUrl, setCoverUrl] = useState('');
-  
   const [blocks, setBlocks] = useState<Block[]>([{ id: '1', type: 'text', content: '' }]);
   const [loading, setLoading] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   const fetchBerita = async () => {
-    const { data } = await supabase.from('berita').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase
+      .from('berita')
+      .select('*')
+      .order('created_at', { ascending: false });
     if (data) setBerita(data);
   };
 
@@ -28,42 +171,43 @@ export default function KelolaBerita() {
   const handleJudulChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setJudul(val);
-    const newSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    setSlug(newSlug);
+    setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
   };
 
   const addBlock = (type: 'text' | 'image') => {
     setBlocks([...blocks, { id: Math.random().toString(), type, content: '' }]);
   };
 
-  const removeBlock = (id: string) => {
-    setBlocks(blocks.filter(b => b.id !== id));
-  };
+  const removeBlock = (id: string) => setBlocks(blocks.filter((b) => b.id !== id));
 
-  const updateBlockContent = (id: string, content: string) => {
-    setBlocks(blocks.map(b => b.id === id ? { ...b, content } : b));
+  const updateBlockContent = (id: string, content: string) =>
+    setBlocks(blocks.map((b) => (b.id === id ? { ...b, content } : b)));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setBlocks((prev) => {
+        const oldIndex = prev.findIndex((b) => b.id === active.id);
+        const newIndex = prev.findIndex((b) => b.id === over.id);
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    // Proses submit jadi sangat cepat karena gambar sudah terupload via Uploadthing sebelumnya
-    const finalBlocks = blocks.map(b => ({ type: b.type, content: b.content }));
-
-    const { error: insertError } = await supabase.from('berita').insert([
-      { judul, slug, gambar_cover: coverUrl, konten: finalBlocks }
+    const finalBlocks = blocks.map((b) => ({ type: b.type, content: b.content }));
+    const { error } = await supabase.from('berita').insert([
+      { judul, slug, gambar_cover: coverUrl, konten: finalBlocks },
     ]);
-
-    if (!insertError) {
-      alert('Berita berhasil ditambahkan!');
+    if (!error) {
       setJudul(''); setSlug(''); setCoverUrl('');
       setBlocks([{ id: '1', type: 'text', content: '' }]);
       fetchBerita();
     } else {
-      alert('Gagal menyimpan data ke database: ' + insertError.message);
+      alert('Gagal menyimpan: ' + error.message);
     }
-    
     setLoading(false);
   };
 
@@ -75,139 +219,165 @@ export default function KelolaBerita() {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Kelola Berita Dinamis (via Uploadthing)</h1>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Newspaper className="h-7 w-7 text-primary" />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Kelola Berita</h1>
+          <p className="text-muted-foreground text-sm">Buat dan kelola artikel berita</p>
+        </div>
+        <Badge variant="secondary" className="ml-auto">
+          {berita.length} Artikel
+        </Badge>
+      </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Judul Berita</label>
-              <input type="text" required value={judul} onChange={handleJudulChange} className="w-full border p-2 rounded" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Slug (Otomatis)</label>
-              <input type="text" required value={slug} readOnly className="w-full border p-2 rounded bg-gray-100 text-gray-500" />
-            </div>
-          </div>
+      {/* Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tambah Berita Baru</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-5">
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Gambar Cover Utama</label>
-            {coverUrl ? (
-              <div className="relative w-max">
-                <img src={coverUrl} alt="Cover" className="h-32 object-cover rounded shadow" />
-                <button type="button" onClick={() => setCoverUrl('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">X</button>
+            {/* Judul & Slug */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Judul Berita</Label>
+                <Input required value={judul} onChange={handleJudulChange} placeholder="Judul artikel..." />
               </div>
-            ) : (
-              <div className="border border-dashed border-gray-300 p-4 rounded text-center">
+              <div className="space-y-1.5">
+                <Label>Slug (Otomatis)</Label>
+                <Input value={slug} readOnly className="bg-muted text-muted-foreground" />
+              </div>
+            </div>
+
+            {/* Cover */}
+            <div className="space-y-1.5">
+              <Label>Gambar Cover Utama</Label>
+              {coverUrl ? (
+                <div className="relative w-max">
+                  <img src={coverUrl} alt="Cover" className="h-36 object-cover rounded-lg shadow" />
+                  <Button
+                    type="button" size="icon" variant="destructive"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                    onClick={() => setCoverUrl('')}
+                  >✕</Button>
+                </div>
+              ) : (
                 <UploadButton
                   endpoint="imageUploader"
-                  onClientUploadComplete={(res) => {
-                    setCoverUrl(res[0].url);
-                    alert("Cover berhasil diupload!");
-                  }}
-                  onUploadError={(error: Error) => {
-                    alert(`Gagal upload: ${error.message}`);
-                  }}
+                  onClientUploadComplete={(res) => setCoverUrl(res[0].url)}
+                  onUploadError={(error: Error) => alert(`Gagal upload: ${error.message}`)}
+                  appearance={uploadAppearance}
                 />
-              </div>
-            )}
-          </div>
-
-          <div className="border border-gray-300 p-4 rounded-lg bg-gray-50 mt-6">
-            <label className="block text-sm font-bold mb-4 text-gray-700">Susun Isi Berita</label>
-            
-            {blocks.map((block) => (
-              <div key={block.id} className="flex gap-4 mb-4 items-start bg-white p-4 rounded border shadow-sm">
-                <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold mt-1">
-                  {block.type === 'text' ? 'TEKS' : 'GAMBAR'}
-                </div>
-                <div className="flex-1">
-                  {block.type === 'text' ? (
-                    <textarea 
-                      placeholder="Tulis paragraf di sini..." value={block.content} 
-                      onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                      className="w-full border p-2 rounded min-h-[100px]" required
-                    />
-                  ) : (
-                    // Cek apakah gambar sudah diupload
-                    block.content ? (
-                      <div className="relative w-max mt-2">
-                        <img src={block.content} alt="Block Image" className="h-32 rounded shadow" />
-                        <button type="button" onClick={() => updateBlockContent(block.id, '')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">X</button>
-                      </div>
-                    ) : (
-                      <div className="border border-dashed border-gray-300 p-4 rounded text-center mt-2">
-                        <UploadButton
-                          endpoint="imageUploader"
-                          onClientUploadComplete={(res) => {
-                            updateBlockContent(block.id, res[0].url);
-                          }}
-                          onUploadError={(error: Error) => {
-                            alert(`Gagal upload: ${error.message}`);
-                          }}
-                        />
-                      </div>
-                    )
-                  )}
-                </div>
-                {blocks.length > 1 && (
-                  <button type="button" onClick={() => removeBlock(block.id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 font-bold">X</button>
-                )}
-              </div>
-            ))}
-
-            <div className="flex gap-2 mt-4">
-              <button type="button" onClick={() => addBlock('text')} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100 font-medium">
-                + Tambah Teks
-              </button>
-              <button type="button" onClick={() => addBlock('image')} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-100 font-medium">
-                + Tambah Gambar
-              </button>
+              )}
             </div>
-          </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white px-4 py-3 rounded font-bold hover:bg-blue-700 disabled:bg-blue-300 mt-4">
-            {loading ? 'Menyimpan Berita...' : 'Simpan Berita Terbit'}
-          </button>
-        </form>
-      </div>
-      
-      {/* DAFTAR BERITA TETAP SAMA */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Daftar Berita</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2 text-left">Gambar</th>
-                <th className="border p-2 text-left">Judul</th>
-                <th className="border p-2 text-left">Slug</th>
-                <th className="border p-2 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {berita.map((item) => (
-                <tr key={item.id}>
-                  <td className="border p-2">
-                    {item.gambar_cover ? (
-                      <img src={item.gambar_cover} alt="Cover" className="w-16 h-16 object-cover rounded" />
-                    ) : (
-                      <span className="text-gray-400 text-sm">Tidak ada</span>
-                    )}
-                  </td>
-                  <td className="border p-2">{item.judul}</td>
-                  <td className="border p-2 text-blue-500">{item.slug}</td>
-                  <td className="border p-2 text-center">
-                    <button onClick={() => handleDelete(item.id)} className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Hapus</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            <Separator />
 
+            {/* Content Blocks — Drag & Drop */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Susun Isi Berita</Label>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <GripVertical className="h-3 w-3" /> Drag untuk ubah urutan
+                </span>
+              </div>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={blocks.map((b) => b.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {blocks.map((block) => (
+                      <SortableBlock
+                        key={block.id}
+                        block={block}
+                        canRemove={blocks.length > 1}
+                        onRemove={removeBlock}
+                        onUpdate={updateBlockContent}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+
+              {/* Tambah Blok */}
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="outline" size="sm" onClick={() => addBlock('text')}>
+                  <PlusCircle className="h-4 w-4 mr-1" /> Tambah Teks
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => addBlock('image')}>
+                  <PlusCircle className="h-4 w-4 mr-1" /> Tambah Gambar
+                </Button>
+              </div>
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Menyimpan Berita...' : 'Simpan Berita Terbit'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Tabel Daftar Berita */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Daftar Berita</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-24">Cover</TableHead>
+                <TableHead>Judul</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead className="text-center w-24">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {berita.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    Belum ada berita.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                berita.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      {item.gambar_cover ? (
+                        <img src={item.gambar_cover} alt="Cover" className="w-14 h-14 object-cover rounded-md" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-md bg-muted flex items-center justify-center">
+                          <ImageOff className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{item.judul}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-xs">{item.slug}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
