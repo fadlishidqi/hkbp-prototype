@@ -28,12 +28,12 @@ export default function Footer() {
                   HKBP
                 </span>
                 <span className="text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase mt-1 text-brand">
-                  165 Tahun Bersama
+                  165 Tahun
                 </span>
               </div>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-sm font-medium">
-              Merayakan 165 tahun perjalanan iman Huria Kristen Batak Protestan.
+              Merayakan 165 tahun perjalanan iman Huria Kristen Batak Protestan melalui serangkaian kegiatan, berita, dan tur konser di 65 kota.
             </p>
           </div>
 

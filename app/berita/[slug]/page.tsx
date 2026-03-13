@@ -3,9 +3,51 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next'; // 1. IMPORT METADATA
 
 export const revalidate = 0;
 
+// ─── 2. FUNGSI GENERATE METADATA (OPEN GRAPH DINAMIS) ───
+// Fungsi ini dieksekusi oleh Next.js SEBELUM halaman di-render untuk membuat tag <meta> SEO
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+
+  // Ambil data berita spesifik berdasarkan slug
+  const { data: berita } = await supabase
+    .from('berita')
+    .select('judul, gambar_cover')
+    .eq('slug', slug)
+    .single();
+
+  // Jika berita tidak ditemukan, kembalikan metadata standar
+  if (!berita) {
+    return {
+      title: 'Berita Tidak Ditemukan',
+    };
+  }
+
+  // Jika ditemukan, timpa metadata layout.tsx dengan data berita ini!
+  return {
+    title: berita.judul,
+    description: `Baca selengkapnya tentang: ${berita.judul}`,
+    openGraph: {
+      title: berita.judul,
+      description: `Baca selengkapnya tentang: ${berita.judul}`,
+      // Gunakan gambar cover berita sebagai gambar WhatsApp/Facebook. 
+      // Jika tidak ada, gunakan og-image.png bawaan.
+      images: [berita.gambar_cover || '/og-image.png'], 
+      type: 'article', // Ubah tipe menjadi artikel karena ini halaman berita
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: berita.judul,
+      description: `Baca selengkapnya tentang: ${berita.judul}`,
+      images: [berita.gambar_cover || '/og-image.png'],
+    },
+  };
+}
+
+// ─── 3. KOMPONEN HALAMAN UTAMA ───
 export default async function DetailBerita({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
@@ -138,7 +180,6 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
                             alt={`Ilustrasi ${berita.judul}`}
                           />
                         </div>
-                        {/* Caption di bawah gambar sekarang MENGGUNAKAN JUDUL BERITA */}
                         <figcaption className="text-center mt-4 mb-2 px-2">
                           <p className="text-xs sm:text-sm text-muted-foreground italic font-medium">
                             {berita.judul}

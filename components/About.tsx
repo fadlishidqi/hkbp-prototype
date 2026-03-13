@@ -101,14 +101,13 @@ export default function About() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold leading-tight mb-4 sm:mb-6 text-foreground">
-            165 Tahun Iman,{" "}
-            <span className="text-brand">Satu Warisan Abadi</span>
+            165 Tahun Iman dan Pelayanan
           </h2>
 
           <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
             Huria Kristen Batak Protestan adalah gereja Protestan terbesar di Indonesia,
-            didirikan tahun 1861 di tanah Batak. Kini, di usia ke-165, kami merayakan
-            perjalanan iman yang telah menyentuh jutaan jiwa.
+            didirikan tahun 1861 di tanah Batak. Di usia ke-165, kami merayakan
+            perjalanan iman ini dengan menyelenggarakan serangkaian kegiatan dan tur konser di 65 kota.
           </p>
         </motion.div>
 
@@ -189,23 +188,6 @@ export default function About() {
                 </motion.div>
               ))}
             </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.7, delay: 0.48 }}
-              className="relative rounded-[0_14px_14px_0] bg-brand/5 border-l-[3px] border-l-brand p-[14px_14px_14px_16px]"
-            >
-              <Quote size={16} className="text-brand opacity-60 mb-2" />
-              <p className="text-sm text-foreground italic leading-relaxed mb-3">
-                HKBP terbuka bagi seluruh kelompok etnis dan bangsa, membawa terang Injil dari tanah Batak ke seluruh dunia.
-              </p>
-              <footer className="text-[10px] font-bold tracking-[0.15em] text-brand uppercase">
-                — Pengakuan Iman HKBP
-              </footer>
-            </motion.div>
-
           </motion.div>
         </div>
       </div>

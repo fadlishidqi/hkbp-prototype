@@ -22,7 +22,7 @@ const fontHeading = Playfair_Display({
 
 // ─── UPGRADE: SEO & Social Media Meta Tags dengan Template ───
 export const metadata: Metadata = {
-  metadataBase: new URL('https://hkbp165.id'), // Ganti dengan domain asli saat rilis
+  metadataBase: new URL('https://hkbp-prototype.vercel.app'), // Domain deployment Vercel
   title: {
     default: "HUT ke-165 HKBP | Konser Perayaan", // Judul halaman utama
     template: "%s | HUT 165 HKBP", // Otomatis menambah nama brand di halaman lain
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Konser Perayaan HUT ke-165 HKBP",
     description: "Charity concert di 165 kota. Seluruh hasil disumbangkan untuk Puncak HUT ke-165 HKBP, Oktober 2026. Amankan tiketmu sekarang!",
-    url: "https://hkbp165.id",
+    url: "https://hkbp-prototype.vercel.app",
     siteName: "HUT 165 HKBP",
     images: [
       {

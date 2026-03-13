@@ -34,13 +34,13 @@ export default function Tiket({ tiket }: Props) {
           className="text-center mb-16"
         >
           <span className="inline-block text-xs font-bold tracking-[0.2em] uppercase mb-4 text-brand bg-brand/10 px-4 py-1.5 rounded-full border border-brand/20">
-            Konser HUT ke-165
+            Road to 165
           </span>
           <h2 className="text-4xl md:text-5xl font-heading font-bold text-foreground mb-5 tracking-tight">
             Pesan Tiket Konser
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto font-medium">
-            Jadilah bagian dari momen bersejarah ini. Pilih kategori tiket yang sesuai sebelum kehabisan.
+            Pilih kategori tiket konser dari berbagai kota yang sesuai sebelum kehabisan.
           </p>
         </motion.div>
 

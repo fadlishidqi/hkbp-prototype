@@ -63,17 +63,14 @@ export default function ConcertSchedule() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center mb-16"
         >
-          <span className="inline-block text-xs font-bold tracking-[0.2em] uppercase mb-5 text-brand">
-            Anak ni Raja Production × HKBP
-          </span>
           {/* Implementasi font-heading untuk kesan megah */}
           <h2 className="text-4xl md:text-6xl font-heading font-bold tracking-tight text-foreground mb-5">
             Konser Road to 165
           </h2>
           <p className="max-w-xl mx-auto leading-relaxed text-sm md:text-base text-muted-foreground">
-            Charity concert di{' '}
-            <span className="text-foreground font-semibold">165 kota</span>{' '}
-            Indonesia &amp; luar negeri. Seluruh hasil disumbangkan untuk Puncak HUT ke-165 HKBP, Oktober 2026.
+            Mengadakan Konser di{' '}
+            <span className="text-foreground font-semibold">65 kota</span>{' '}
+            di Indonesia.
           </p>
         </motion.div>
 

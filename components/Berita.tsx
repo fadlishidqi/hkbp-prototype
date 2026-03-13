@@ -49,7 +49,7 @@ export default function Berita({ berita }: Props) {
             </h2>
           </div>
           <p className="text-muted-foreground max-w-xs text-sm leading-relaxed font-medium">
-            Informasi terkini seputar persiapan dan rangkaian acara HUT ke-165 HKBP.
+            Informasi terkini seputar persiapan peringatan HUT ke-165, kegiatan panitia, serta kabar seputar tur dari berbagai kota.
           </p>
         </motion.div>
 

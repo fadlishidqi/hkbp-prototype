@@ -1,7 +1,7 @@
 'use client';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion'; // Import framer-motion
+import { motion } from 'framer-motion';
 import ColorBends from '@/components/ui/ColorBends';
 
 // Countdown to Oct 7, 2026
@@ -55,6 +55,15 @@ export default function Hero() {
 
   const countdown = useCountdown(new Date('2026-10-07T19:00:00'));
 
+  // ─── FUNGSI SMOOTH SCROLL ───
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault(); // Mencegah lompatan kasar bawaan HTML
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' }); // Meluncur perlahan ke section tujuan
+    }
+  };
+
   return (
     <section
       id="home"
@@ -77,7 +86,7 @@ export default function Hero() {
         <div className="flex justify-center mb-6 sm:mb-8 animate-fade-up" style={{ animationDelay: '0ms' }}>
           <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase px-4 py-2 rounded-full border border-border/50 bg-background/40 backdrop-blur-md shadow-sm">
             <span className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse shadow-[0_0_8px_var(--brand)]" style={{ background: 'var(--brand)' }} />
-            <span className="leading-none text-foreground/90">7 Oktober 2026 · Konser Perayaan</span>
+            <span className="leading-none text-foreground/90">Berita, Jadwal Konser 65 Kota & Tiket</span>
           </span>
         </div>
 
@@ -101,25 +110,30 @@ export default function Hero() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-14 sm:mb-16 animate-fade-up w-full sm:w-auto" style={{ animationDelay: '460ms' }}>
+          {/* ─── TOMBOL TIKET (DENGAN SMOOTH SCROLL) ─── */}
           <a
             href="#tiket"
+            onClick={(e) => handleScroll(e, 'tiket')}
             className="group relative w-full sm:w-auto px-10 py-4 rounded-full text-sm sm:text-base font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl text-center overflow-hidden"
             style={{ background: 'var(--brand)', color: 'var(--brand-foreground)', boxShadow: '0 10px 30px -10px var(--brand)' }}
           >
-            <span className="relative z-10">Dapatkan Tiket Sekarang</span>
+            <span className="relative z-10">Jadwal & Tiket Konser 65 Kota</span>
             <div className="absolute inset-0 h-full w-full bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
           </a>
+          
+          {/* ─── TOMBOL BERITA (DENGAN SMOOTH SCROLL) ─── */}
           <a
-            href="#about"
+            href="#berita"
+            onClick={(e) => handleScroll(e, 'berita')}
             className="w-full sm:w-auto px-10 py-4 rounded-full text-sm sm:text-base font-semibold border border-border/60 bg-background/50 text-foreground transition-all duration-300 hover:-translate-y-1 hover:bg-background/80 backdrop-blur-md text-center"
           >
-            Tentang HKBP
+            Berita Terkini
           </a>
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: '560ms' }}>
-          <p className="text-[10px] sm:text-xs font-bold tracking-[0.25em] uppercase text-muted-foreground/70 mb-6">
-            Menghitung Waktu Menuju Perayaan
+          <p className="text-sm sm:text-base md:text-lg font-black tracking-[0.25em] uppercase text-foreground mb-6 drop-shadow-sm">
+            Road to 165
           </p>
           <div className="inline-flex items-center justify-center gap-2 sm:gap-6 md:gap-8 px-6 sm:px-12 py-5 sm:py-8 rounded-3xl border border-white/10 dark:border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-xl shadow-2xl max-w-full">
             <CountdownUnit mounted={mounted} value={countdown.days}    label="Hari" />
@@ -133,7 +147,6 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* IMPROVEMENT: Scroll Down Indicator Animasi */}
       <motion.div 
         className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-20 pointer-events-none hidden sm:flex"
         initial={{ opacity: 0 }}
