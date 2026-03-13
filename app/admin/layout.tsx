@@ -31,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
   
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
@@ -47,20 +48,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   // --- KOMPONEN SIDEBAR ---
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+  const renderSidebarContent = () => (
+    <div className="flex flex-col h-full overflow-hidden w-[256px]">
       {/* Brand Header */}
-      <div className="flex items-center gap-4 mb-8 px-2">
-        <div className="relative overflow-hidden rounded-full bg-muted/40 p-1.5 border border-border/50 flex-shrink-0">
+      <div className="flex items-center gap-4 mb-8 px-2 whitespace-nowrap">
+        <div className="relative overflow-hidden rounded-full bg-muted/40 p-1.5 border border-border/50 flex-shrink-0 w-[42px] h-[42px] flex items-center justify-center">
           <Image 
             src="/Logo-HKBP.png" 
             alt="Logo HKBP" 
             width={36} 
             height={36} 
-            className="w-9 h-9 object-contain"
+            className="w-8 h-8 object-contain"
           />
         </div>
-        <div className="flex flex-col overflow-hidden">
+        <div 
+          className={cn(
+            "flex flex-col overflow-hidden transition-opacity duration-300", 
+            isHovered ? "opacity-100" : "md:opacity-0 opacity-100"
+          )}
+        >
           <span className="font-heading font-bold text-lg tracking-tight leading-none text-foreground truncate">
             HKBP 165
           </span>
@@ -71,8 +77,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1.5 flex-1">
-        <div className="text-[9px] font-bold tracking-[0.2em] uppercase text-muted-foreground/70 mb-2 px-2">
+      <nav className={cn("flex flex-col gap-1.5 flex-1", isHovered ? "w-full" : "w-auto md:w-full")}>
+        <div 
+          className={cn(
+            "text-[9px] font-bold tracking-[0.2em] uppercase text-muted-foreground/70 mb-2 px-2 transition-opacity duration-300 whitespace-nowrap",
+            isHovered ? "opacity-100" : "md:opacity-0 opacity-100"
+          )}
+        >
           Menu Utama
         </div>
         {navItems.map(({ href, label, icon: Icon }) => {
@@ -81,20 +92,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link key={href} href={href} onClick={() => setIsMobileMenuOpen(false)}>
               <div
                 className={cn(
-                  'group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 cursor-pointer',
+                  'group flex items-center py-2.5 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden whitespace-nowrap',
+                  isHovered ? 'px-3' : 'md:px-1.5 px-3',
                   isActive 
                     ? 'bg-brand/10 text-brand shadow-[inset_3px_0_0_0_var(--brand)]' 
-                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                  !isHovered && !isActive && 'md:hover:bg-transparent md:hover:text-muted-foreground' // Clean look when collapsed unhovered
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={cn("w-4 h-4 transition-transform duration-300", isActive ? "scale-110" : "group-hover:scale-110")} />
-                  <span className={cn("text-sm transition-all duration-300", isActive ? "font-bold" : "font-medium")}>
+                  <div className="flex items-center justify-center w-8 h-8 flex-shrink-0">
+                     <Icon className={cn("w-5 h-5 transition-transform duration-300", isActive ? "scale-110" : "group-hover:scale-110")} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm transition-all duration-300 truncate", 
+                      isActive ? "font-bold" : "font-medium",
+                      isHovered ? "opacity-100 w-auto" : "md:opacity-0 md:w-0 opacity-100 w-auto"
+                    )}
+                  >
                     {label}
                   </span>
                 </div>
                 {isActive && (
-                  <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  <ChevronRight 
+                    className={cn(
+                      "w-3.5 h-3.5 opacity-70 ml-auto transition-opacity duration-300 flex-shrink-0",
+                      isHovered ? "opacity-70" : "md:opacity-0 opacity-70"
+                    )} 
+                  />
                 )}
               </div>
             </Link>
@@ -103,13 +129,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </nav>
 
       {/* Footer Sidebar (Logout) */}
-      <div className="mt-auto pt-6 border-t border-border/50">
+      <div className={cn("mt-auto pt-6 border-t border-border/50 whitespace-nowrap", isHovered ? "w-full" : "w-auto md:w-full")}>
         <button
           onClick={handleLogout}
-          className="group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-destructive/10 hover:text-destructive shadow-[inset_0_0_0_0_var(--destructive)] hover:shadow-[inset_3px_0_0_0_var(--destructive)]"
+          className={cn(
+            "group flex items-center rounded-xl text-sm font-medium text-muted-foreground transition-all duration-300 overflow-hidden",
+            isHovered ? "px-3 py-2.5 hover:bg-destructive/10 hover:text-destructive shadow-[inset_0_0_0_0_var(--destructive)] hover:shadow-[inset_3px_0_0_0_var(--destructive)] w-full" : "md:px-2 md:py-2 px-3 py-2.5 md:hover:bg-transparent hover:bg-destructive/10 md:w-auto w-full"
+          )}
         >
-          <LogOut className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1" />
-          <span>Keluar Sistem</span>
+          <div className="flex items-center justify-center w-8 h-8 flex-shrink-0">
+             <LogOut className="w-5 h-5 transition-transform duration-300 group-hover:text-destructive md:group-hover:-translate-x-0 group-hover:-translate-x-1" />
+          </div>
+          <span 
+             className={cn(
+                 "transition-opacity duration-300 ml-3 truncate",
+                 isHovered ? "opacity-100 md:w-auto" : "md:opacity-0 md:w-0 opacity-100 w-auto"
+             )}
+          >Keluar Sistem</span>
         </button>
       </div>
     </div>
@@ -119,8 +155,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-muted/20 dark:bg-background flex overflow-hidden selection:bg-brand/20 selection:text-brand">
       
       {/* ── DESKTOP SIDEBAR ── */}
-      <aside className="hidden md:flex flex-col w-64 bg-card/50 backdrop-blur-xl border-r border-border/50 p-5 z-20 shadow-[4px_0_24px_rgb(0,0,0,0.02)]">
-        <SidebarContent />
+      <aside 
+        className={cn(
+          "hidden md:flex flex-col bg-card/50 backdrop-blur-xl border-r border-border/50 py-5 z-20 shadow-[4px_0_24px_rgb(0,0,0,0.02)] transition-[width,padding] duration-300 ease-in-out overflow-hidden h-screen sticky top-0 items-start",
+          isHovered ? "w-64 px-5" : "w-[80px] px-3.5"
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {renderSidebarContent()}
       </aside>
 
       {/* ── MOBILE SIDEBAR OVERLAY ── */}
@@ -135,12 +178,83 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <motion.div 
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border p-5 z-50 flex flex-col md:hidden shadow-2xl"
+              className="fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border p-5 z-50 flex flex-col md:hidden shadow-2xl overflow-y-auto"
             >
-              <SidebarContent />
+              {/* Force Mobile View Properties explicitly overriding Desktop Sidebar's constraints based on hover */}
+              <div className="w-[216px] h-full flex flex-col opacity-100"> 
+                <div className="flex flex-col h-full overflow-hidden w-full opacity-100">
+                  {/* Brand Header */}
+                  <div className="flex items-center gap-4 mb-8 px-2 whitespace-nowrap opacity-100">
+                    <div className="relative overflow-hidden rounded-full bg-muted/40 p-1.5 border border-border/50 flex-shrink-0 w-[42px] h-[42px] flex items-center justify-center opacity-100">
+                      <Image 
+                        src="/Logo-HKBP.png" 
+                        alt="Logo HKBP" 
+                        width={36} 
+                        height={36} 
+                        className="w-8 h-8 object-contain opacity-100"
+                      />
+                    </div>
+                    <div className="flex flex-col overflow-hidden transition-opacity duration-300 opacity-100">
+                      <span className="font-heading font-bold text-lg tracking-tight leading-none text-foreground truncate opacity-100">
+                        HKBP 165
+                      </span>
+                      <span className="text-[8px] font-bold tracking-[0.2em] uppercase mt-1 text-brand truncate opacity-100">
+                        Admin Panel
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Navigation */}
+                  <nav className="flex flex-col gap-1.5 flex-1 w-full opacity-100">
+                    <div className="text-[9px] font-bold tracking-[0.2em] uppercase text-muted-foreground/70 mb-2 px-2 transition-opacity duration-300 whitespace-nowrap opacity-100">
+                      Menu Utama
+                    </div>
+                    {navItems.map(({ href, label, icon: Icon }) => {
+                      const isActive = pathname === href;
+                      return (
+                        <Link key={href} href={href} onClick={() => setIsMobileMenuOpen(false)}>
+                          <div
+                            className={cn(
+                              'group flex items-center py-2.5 px-3 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden whitespace-nowrap opacity-100',
+                              isActive 
+                                ? 'bg-brand/10 text-brand shadow-[inset_3px_0_0_0_var(--brand)]' 
+                                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                            )}
+                          >
+                            <div className="flex items-center gap-3 opacity-100">
+                              <div className="flex items-center justify-center w-8 h-8 flex-shrink-0 opacity-100">
+                                 <Icon className={cn("w-5 h-5 transition-transform duration-300 opacity-100", isActive ? "scale-110" : "group-hover:scale-110")} />
+                              </div>
+                              <span className={cn("text-sm transition-all duration-300 truncate opacity-100 w-auto", isActive ? "font-bold" : "font-medium")}>
+                                {label}
+                              </span>
+                            </div>
+                            {isActive && (
+                              <ChevronRight className="w-3.5 h-3.5 opacity-70 ml-auto transition-opacity duration-300 flex-shrink-0" />
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </nav>
+
+                  {/* Footer Sidebar (Logout) */}
+                  <div className="mt-auto pt-6 border-t border-border/50 whitespace-nowrap w-full opacity-100">
+                    <button
+                      onClick={handleLogout}
+                      className="group flex items-center rounded-xl text-sm font-medium text-muted-foreground transition-all duration-300 overflow-hidden px-3 py-2.5 hover:bg-destructive/10 hover:text-destructive shadow-[inset_0_0_0_0_var(--destructive)] hover:shadow-[inset_3px_0_0_0_var(--destructive)] w-full opacity-100"
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 flex-shrink-0 opacity-100">
+                         <LogOut className="w-5 h-5 transition-transform duration-300 group-hover:text-destructive group-hover:-translate-x-1 opacity-100" />
+                      </div>
+                      <span className="transition-opacity duration-300 ml-3 truncate opacity-100 w-auto">Keluar Sistem</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="absolute top-5 right-5 p-2 bg-muted rounded-full text-muted-foreground"
+                className="absolute top-5 right-5 p-2 bg-muted rounded-full text-muted-foreground z-50"
               >
                 <X className="w-4 h-4" />
               </button>

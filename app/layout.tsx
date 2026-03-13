@@ -20,10 +20,13 @@ const fontHeading = Playfair_Display({
   display: "swap",
 });
 
-// IMPROVEMENT: SEO & Social Media Meta Tags (WhatsApp/FB/Twitter Preview)
+// ─── UPGRADE: SEO & Social Media Meta Tags dengan Template ───
 export const metadata: Metadata = {
-  metadataBase: new URL('https://hkbp165.id'), 
-  title: "HUT ke-165 HKBP | Konser Perayaan",
+  metadataBase: new URL('https://hkbp165.id'), // Ganti dengan domain asli saat rilis
+  title: {
+    default: "HUT ke-165 HKBP | Konser Perayaan", // Judul halaman utama
+    template: "%s | HUT 165 HKBP", // Otomatis menambah nama brand di halaman lain
+  },
   description: "Jadilah bagian dari momen bersejarah! Konser Perayaan HUT ke-165 Huria Kristen Batak Protestan di 165 kota. Pesan tiket Anda sekarang.",
   keywords: ["HKBP", "HUT HKBP 165", "Konser HKBP", "Gereja HKBP", "Tiket Konser HKBP"],
   openGraph: {
@@ -33,10 +36,10 @@ export const metadata: Metadata = {
     siteName: "HUT 165 HKBP",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.png", // Akan membaca file di folder public/og-image.png
         width: 1200,
         height: 630,
-        alt: "Poster Konser HUT 165 HKBP",
+        alt: "HUT 165 HKBP",
       },
     ],
     locale: "id_ID",
@@ -44,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Konser Perayaan HUT ke-165 HKBP",
+    title: "HUT ke-165 HKBP",
     description: "Charity concert di 165 kota untuk Puncak HUT ke-165 HKBP. Amankan tiketmu sekarang!",
     images: ["/og-image.png"],
   },

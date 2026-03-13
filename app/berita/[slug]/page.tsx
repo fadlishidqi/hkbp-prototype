@@ -26,7 +26,6 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
 
       {/* Top bar with back button */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-sm">
-        {/* Bagian Navigasi & Judul Header (Lebih Lebar dan Lega) */}
         <div className="max-w-6xl mx-auto px-6 sm:px-10 h-16 sm:h-20 flex items-center justify-between">
           <Link
             href="/#berita"
@@ -49,7 +48,7 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
             Kembali ke Beranda
           </Link>
 
-          {/* Brand - Ukuran Diperbesar sesuai gaya Navbar Utama */}
+          {/* Brand */}
           <Link href="/" className="flex items-center gap-4 group">
             <div className="relative overflow-hidden rounded-full drop-shadow-sm">
               <Image 
@@ -75,7 +74,7 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
         </div>
       </header>
 
-      {/* Hero Section Berita - Estetika Megah */}
+      {/* Hero Section Berita */}
       <main className="min-h-screen">
         <article className="max-w-4xl mx-auto px-5 sm:px-8 pt-16 pb-24">
           
@@ -86,7 +85,7 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-border" />
             <time className="text-xs sm:text-sm font-semibold uppercase tracking-[0.15em] text-muted-foreground/80">
-              {new Date(berita.tanggal).toLocaleDateString('id-ID', {
+              {new Date(berita.tanggal || berita.created_at).toLocaleDateString('id-ID', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
@@ -94,12 +93,12 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
             </time>
           </div>
 
-          {/* Judul Artikel (Wajar & Proporsional Sesuai Request) */}
+          {/* Judul Artikel */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold leading-tight tracking-tight text-foreground mb-12 drop-shadow-sm">
             {berita.judul}
           </h1>
 
-          {/* Gambar Cover Full Width dengan Efek Melayang */}
+          {/* Gambar Cover Full Width */}
           {berita.gambar_cover && (
             <div className="relative w-full aspect-[21/9] sm:aspect-[2.5/1] rounded-[2rem] overflow-hidden mb-16 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] border border-border/40 group">
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10 pointer-events-none" />
@@ -115,6 +114,8 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
           <div className="max-w-3xl mx-auto space-y-8 sm:space-y-10">
             {Array.isArray(konten) &&
               konten.map((blok: any, idx: number) => {
+                
+                // JIKA BLOK ADALAH TEKS
                 if (blok.type === 'text') {
                   return (
                     <div key={idx} className="relative">
@@ -124,15 +125,25 @@ export default async function DetailBerita({ params }: { params: Promise<{ slug:
                     </div>
                   );
                 }
+                
+                // JIKA BLOK ADALAH GAMBAR
                 if (blok.type === 'image') {
                   return (
-                    <figure key={idx} className="my-14 relative w-full sm:w-[110%] sm:-ml-[5%]">
-                      <div className="relative overflow-hidden rounded-[1.5rem] shadow-2xl border border-border/30">
-                        <img
-                          src={blok.content}
-                          className="w-full h-auto object-cover hover:scale-[1.02] transition-transform duration-700"
-                          alt={`Ilustrasi Detail ${idx + 1}`}
-                        />
+                    <figure key={idx} className="my-10 sm:my-14 flex justify-center w-full">
+                      <div className="bg-card p-3 sm:p-4 rounded-2xl shadow-lg border border-border/60 max-w-md w-full hover:shadow-xl transition-shadow duration-500">
+                        <div className="relative overflow-hidden rounded-xl border border-border/30">
+                          <img
+                            src={blok.content}
+                            className="w-full h-auto max-h-[500px] object-cover hover:scale-[1.03] transition-transform duration-700"
+                            alt={`Ilustrasi ${berita.judul}`}
+                          />
+                        </div>
+                        {/* Caption di bawah gambar sekarang MENGGUNAKAN JUDUL BERITA */}
+                        <figcaption className="text-center mt-4 mb-2 px-2">
+                          <p className="text-xs sm:text-sm text-muted-foreground italic font-medium">
+                            {berita.judul}
+                          </p>
+                        </figcaption>
                       </div>
                     </figure>
                   );

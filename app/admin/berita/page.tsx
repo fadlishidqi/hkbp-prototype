@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { UploadButton } from '@/lib/uploadthing';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { id as localeID } from 'date-fns/locale'; // Untuk format tanggal Bahasa Indonesia
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,14 +13,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // CUSTOM POPOVER
+import { Calendar as CustomCalendar } from '@/components/ui/calendar'; // CUSTOM CALENDAR
 import { cn } from '@/lib/utils';
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Trash2, ImageOff, Newspaper, PlusCircle, Type, Image as ImageIcon, GripVertical, Edit, X } from 'lucide-react';
+import { 
+  Trash2, ImageOff, Newspaper, PlusCircle, 
+  Type, Image as ImageIcon, GripVertical, Edit, X,
+  Calendar as CalendarIcon
+} from 'lucide-react';
 
-// dnd-kit
 import {
   DndContext,
   closestCenter,
@@ -43,6 +51,16 @@ const uploadAppearance = {
   container:
     'w-full border border-dashed border-input rounded-lg p-6 flex-col gap-2 bg-muted/30 hover:border-primary/50 transition-colors',
   allowedContent: 'text-muted-foreground text-xs',
+};
+
+// ─── Helper Format Tanggal Indonesia ──────────────────────
+const formatTanggal = (dateString: string) => {
+  if (!dateString) return '-';
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 };
 
 // ─── Sortable Block Item ──────────────────────────────────
@@ -153,6 +171,10 @@ export default function KelolaBerita() {
   const [editId, setEditId] = useState<string | null>(null);
   const [judul, setJudul] = useState('');
   const [slug, setSlug] = useState('');
+  
+  // STATE TANGGAL MENGGUNAKAN OBJECT DATE
+  const [tanggal, setTanggal] = useState<Date | undefined>(new Date());
+  
   const [coverUrl, setCoverUrl] = useState('');
   const [blocks, setBlocks] = useState<Block[]>([{ id: '1', type: 'text', content: '' }]);
   const [loading, setLoading] = useState(false);
@@ -201,6 +223,7 @@ export default function KelolaBerita() {
     setEditId(null);
     setJudul(''); 
     setSlug(''); 
+    setTanggal(new Date()); 
     setCoverUrl('');
     setBlocks([{ id: '1', type: 'text', content: '' }]);
   };
@@ -208,12 +231,15 @@ export default function KelolaBerita() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    // Format tanggal untuk disimpan ke database (YYYY-MM-DD)
+    const formattedDate = tanggal ? format(tanggal, 'yyyy-MM-dd') : null;
     const finalBlocks = blocks.map((b) => ({ type: b.type, content: b.content }));
     
     if (editId) {
       const { error } = await supabase
         .from('berita')
-        .update({ judul, slug, gambar_cover: coverUrl, konten: finalBlocks })
+        .update({ judul, slug, tanggal: formattedDate, gambar_cover: coverUrl, konten: finalBlocks })
         .eq('id', editId);
 
       if (!error) {
@@ -224,7 +250,7 @@ export default function KelolaBerita() {
       }
     } else {
       const { error } = await supabase.from('berita').insert([
-        { judul, slug, gambar_cover: coverUrl, konten: finalBlocks },
+        { judul, slug, tanggal: formattedDate, gambar_cover: coverUrl, konten: finalBlocks },
       ]);
       
       if (!error) {
@@ -241,6 +267,7 @@ export default function KelolaBerita() {
     setEditId(item.id);
     setJudul(item.judul);
     setSlug(item.slug);
+    setTanggal(item.tanggal ? new Date(item.tanggal) : new Date()); 
     setCoverUrl(item.gambar_cover || '');
     
     if (item.konten && Array.isArray(item.konten)) {
@@ -265,7 +292,7 @@ export default function KelolaBerita() {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Header Sesuai Aslinya */}
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Newspaper className="h-7 w-7 text-primary" />
         <div>
@@ -293,11 +320,44 @@ export default function KelolaBerita() {
           <form onSubmit={handleSubmit} className="space-y-5">
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Judul */}
               <div className="space-y-1.5">
                 <Label className="text-foreground">Judul Berita</Label>
-                <Input required value={judul} onChange={handleJudulChange} placeholder="Judul artikel..." className="bg-background" />
+                <Input required value={judul} onChange={handleJudulChange} placeholder="Judul artikel..." className="bg-background border-border/50 focus:border-primary" />
               </div>
-              <div className="space-y-1.5">
+
+              {/* TANGGAL PREMIUM DENGAN POPOVER CALENDAR */}
+              <div className="space-y-1.5 flex flex-col">
+                <Label className="text-foreground">Tanggal Kegiatan / Publikasi</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-background border-border/50 hover:bg-muted/50 transition-colors",
+                        !tanggal && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {tanggal ? format(tanggal, "PPP", { locale: localeID }) : <span>Pilih tanggal</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  {/* Calendar Popup yang menyatu dengan Dark Mode */}
+                  <PopoverContent className="w-auto p-0 bg-card border-border/50 shadow-xl rounded-xl overflow-hidden" align="start">
+                    <CustomCalendar
+                      mode="single"
+                      selected={tanggal}
+                      onSelect={setTanggal}
+                      initialFocus
+                      className="bg-card text-foreground"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Slug */}
+              <div className="space-y-1.5 sm:col-span-2">
                 <Label className="text-foreground">Slug (Otomatis)</Label>
                 <Input value={slug} readOnly className="bg-muted text-muted-foreground border-transparent cursor-not-allowed" />
               </div>
@@ -384,13 +444,13 @@ export default function KelolaBerita() {
           <CardTitle className="text-base text-foreground">Daftar Berita</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
+          <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent border-border/50">
                 <TableHead className="w-24 pl-6 text-foreground">Cover</TableHead>
-                <TableHead className="text-foreground">Judul</TableHead>
-                <TableHead className="text-foreground">Slug</TableHead>
-                <TableHead className="text-center w-32 pr-6 text-foreground">Aksi</TableHead>
+                <TableHead className="text-foreground w-[40%]">Info Berita</TableHead>
+                <TableHead className="text-foreground hidden md:table-cell">Slug</TableHead>
+                <TableHead className="text-center w-28 pr-6 text-foreground">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -412,18 +472,30 @@ export default function KelolaBerita() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium text-foreground">{item.judul}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono text-xs font-normal border-border/50 bg-background/50">
+                    
+                    <TableCell className="max-w-xs pr-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-foreground line-clamp-2" title={item.judul}>
+                          {item.judul}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <CalendarIcon className="h-3 w-3" />
+                          <span>{formatTanggal(item.tanggal || item.created_at)}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="hidden md:table-cell truncate max-w-[200px]" title={item.slug}>
+                      <Badge variant="outline" className="font-mono text-xs font-normal border-border/50 bg-background/50 truncate max-w-full inline-block">
                         {item.slug}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center pr-6">
-                      <div className="flex justify-center gap-2">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-500 transition-colors" onClick={() => handleEdit(item)}>
+                      <div className="flex justify-center gap-1.5">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-500 transition-colors shrink-0" onClick={() => handleEdit(item)}>
                           <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => handleDelete(item.id)}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0" onClick={() => handleDelete(item.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
