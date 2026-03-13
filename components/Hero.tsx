@@ -1,6 +1,7 @@
 'use client';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion'; // Import framer-motion
 import ColorBends from '@/components/ui/ColorBends';
 
 // Countdown to Oct 7, 2026
@@ -16,20 +17,22 @@ function useCountdown(target: Date) {
     };
   };
   const [time, setTime] = useState(calc);
+  
   useEffect(() => {
     const id = setInterval(() => setTime(calc()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [target]);
+
   return time;
 }
 
-function CountdownUnit({ value, label }: { value: number; label: string }) {
+function CountdownUnit({ value, label, mounted }: { value: number; label: string; mounted: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-      <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold tabular-nums leading-none text-foreground">
-        {String(value).padStart(2, '0')}
+    <div className="flex flex-col items-center gap-1 sm:gap-2 w-16 sm:w-24">
+      <span className="text-3xl sm:text-4xl md:text-5xl font-bold tabular-nums leading-none text-foreground font-heading">
+        {mounted ? String(value).padStart(2, '0') : '00'}
       </span>
-      <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.12em] sm:tracking-[0.15em] uppercase text-muted-foreground">
+      <span className="text-[9px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-muted-foreground">
         {label}
       </span>
     </div>
@@ -37,7 +40,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 }
 
 function Divider() {
-  return <div className="w-px h-6 sm:h-8 bg-border flex-shrink-0" />;
+  return <div className="w-px h-8 sm:h-12 bg-border/50 flex-shrink-0" />;
 }
 
 export default function Hero() {
@@ -55,123 +58,96 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+      className="relative min-h-[90vh] md:min-h-[85vh] flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* ColorBends bg */}
-      <div className="absolute inset-0 w-full h-full">
+      <div className="absolute inset-0 w-full h-full opacity-80 transition-opacity duration-1000">
         {mounted && <ColorBends {...colors} className="w-full h-full" />}
       </div>
 
-      {/* Vignette */}
       <div
         className="absolute inset-0 pointer-events-none z-[1]"
         style={{
           background: isDark
-            ? 'radial-gradient(ellipse 80% 70% at 50% 50%, rgba(0,0,0,0.5) 0%, transparent 100%)'
-            : 'radial-gradient(ellipse 80% 70% at 50% 50%, rgba(255,255,255,0.55) 0%, transparent 100%)',
+            ? 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%)'
+            : 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.9) 100%)',
         }}
       />
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto pt-24 sm:pt-28 pb-16 sm:pb-20 w-full">
-
-        {/* Eyebrow */}
-        <div className="flex justify-center mb-4 sm:mb-6 animate-fade-up" style={{ animationDelay: '0ms' }}>
-          <span
-            className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold
-                       tracking-[0.15em] sm:tracking-[0.2em] uppercase
-                       px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border
-                       bg-background/60 backdrop-blur-sm text-muted-foreground"
-          >
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse" style={{ background: 'var(--brand)' }} />
-            <span className="leading-none">7 Oktober 2026 · Konser Perayaan</span>
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-5xl mx-auto pt-28 sm:pt-32 pb-12 sm:pb-16 w-full flex flex-col items-center">
+        <div className="flex justify-center mb-6 sm:mb-8 animate-fade-up" style={{ animationDelay: '0ms' }}>
+          <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase px-4 py-2 rounded-full border border-border/50 bg-background/40 backdrop-blur-md shadow-sm">
+            <span className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse shadow-[0_0_8px_var(--brand)]" style={{ background: 'var(--brand)' }} />
+            <span className="leading-none text-foreground/90">7 Oktober 2026 · Konser Perayaan</span>
           </span>
         </div>
 
-        {/* Year badge */}
-        <div className="flex justify-center mb-4 sm:mb-5 animate-fade-up" style={{ animationDelay: '100ms' }}>
-          <span
-            className="text-[11px] sm:text-[13px] font-bold tracking-[0.25em] sm:tracking-[0.3em] uppercase px-4 sm:px-5 py-1.5 rounded-full"
-            style={{
-              background: 'var(--brand)',
-              color: 'var(--brand-foreground)',
-            }}
-          >
-            1861 — 2026
-          </span>
-        </div>
-
-        {/* Main headline */}
-        <h1
-          className="animate-fade-up mb-3"
-          style={{ animationDelay: '200ms' }}
-        >
-          <span className="block text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter leading-none text-foreground">
+        <h1 className="animate-fade-up mb-4 flex flex-col items-center drop-shadow-sm" style={{ animationDelay: '200ms' }}>
+          <span className="block text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-heading font-normal tracking-tight leading-tight text-foreground">
             HUT ke-165
           </span>
           <span
-            className="block text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-extrabold tracking-tighter leading-none mt-1"
-            style={{ color: 'var(--brand)' }}
+            className="block text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-heading font-black tracking-tighter leading-none mt-2 lg:mt-4 dark:text-white"
+            style={{ 
+              color: isDark ? 'white' : 'var(--brand)', 
+              textShadow: isDark ? '0 0 40px rgba(255,255,255,0.3)' : 'none' 
+            }}
           >
             HKBP
           </span>
         </h1>
 
-        {/* Tagline */}
-        <p
-          className="text-sm sm:text-base md:text-xl text-muted-foreground max-w-xs sm:max-w-xl mx-auto font-light mb-6 sm:mb-4 animate-fade-up"
-          style={{ animationDelay: '320ms' }}
-        >
+        <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-muted-foreground/90 max-w-3xl mx-auto font-heading font-bold mb-10 sm:mb-12 animate-fade-up tracking-tight" style={{ animationDelay: '320ms' }}>
           Huria Kristen Batak Protestan
         </p>
 
-        {/* CTA buttons */}
-        <div
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 animate-fade-up"
-          style={{ animationDelay: '460ms' }}
-        >
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-14 sm:mb-16 animate-fade-up w-full sm:w-auto" style={{ animationDelay: '460ms' }}>
           <a
             href="#tiket"
-            className="w-full sm:w-auto px-8 py-3.5 sm:py-4 rounded-full text-sm font-bold
-                       transition-all duration-200 hover:scale-105 hover:opacity-90 shadow-lg text-center"
-            style={{ background: 'var(--brand)', color: 'var(--brand-foreground)' }}
+            className="group relative w-full sm:w-auto px-10 py-4 rounded-full text-sm sm:text-base font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl text-center overflow-hidden"
+            style={{ background: 'var(--brand)', color: 'var(--brand-foreground)', boxShadow: '0 10px 30px -10px var(--brand)' }}
           >
-            Dapatkan Tiket Sekarang
+            <span className="relative z-10">Dapatkan Tiket Sekarang</span>
+            <div className="absolute inset-0 h-full w-full bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
           </a>
           <a
             href="#about"
-            className="w-full sm:w-auto px-8 py-3.5 sm:py-4 rounded-full text-sm font-semibold
-                       border border-border bg-background/70 text-foreground
-                       transition-all duration-200 hover:scale-105 backdrop-blur-sm text-center"
+            className="w-full sm:w-auto px-10 py-4 rounded-full text-sm sm:text-base font-semibold border border-border/60 bg-background/50 text-foreground transition-all duration-300 hover:-translate-y-1 hover:bg-background/80 backdrop-blur-md text-center"
           >
-            Pelajari Lebih Lanjut
+            Tentang HKBP
           </a>
         </div>
 
-        {/* Countdown */}
-        <div
-          className="animate-fade-up"
-          style={{ animationDelay: '560ms' }}
-        >
-          <p className="text-[10px] sm:text-xs font-semibold tracking-[0.15em] sm:tracking-[0.2em] uppercase text-muted-foreground mb-4 sm:mb-5">
-            Hitung Mundur Menuju 7 Oktober
+        <div className="animate-fade-up" style={{ animationDelay: '560ms' }}>
+          <p className="text-[10px] sm:text-xs font-bold tracking-[0.25em] uppercase text-muted-foreground/70 mb-6">
+            Menghitung Waktu Menuju Perayaan
           </p>
-          {/* Responsive countdown: tighter on mobile */}
-          <div
-            className="inline-flex items-center gap-3 sm:gap-6 md:gap-10
-                       px-4 sm:px-8 py-3.5 sm:py-5 rounded-2xl border border-border
-                       bg-background/60 backdrop-blur-md max-w-full"
-          >
-            <CountdownUnit value={countdown.days}    label="Hari" />
+          <div className="inline-flex items-center justify-center gap-2 sm:gap-6 md:gap-8 px-6 sm:px-12 py-5 sm:py-8 rounded-3xl border border-white/10 dark:border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-xl shadow-2xl max-w-full">
+            <CountdownUnit mounted={mounted} value={countdown.days}    label="Hari" />
             <Divider />
-            <CountdownUnit value={countdown.hours}   label="Jam" />
+            <CountdownUnit mounted={mounted} value={countdown.hours}   label="Jam" />
             <Divider />
-            <CountdownUnit value={countdown.minutes} label="Menit" />
+            <CountdownUnit mounted={mounted} value={countdown.minutes} label="Menit" />
             <Divider />
-            <CountdownUnit value={countdown.seconds} label="Detik" />
+            <CountdownUnit mounted={mounted} value={countdown.seconds} label="Detik" />
           </div>
         </div>
       </div>
+
+      {/* IMPROVEMENT: Scroll Down Indicator Animasi */}
+      <motion.div 
+        className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-20 pointer-events-none hidden sm:flex"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 1 }}
+      >
+        <div className="w-[1px] h-12 bg-border/50 relative overflow-hidden">
+          <motion.div
+            className="w-full h-1/2 bg-brand"
+            animate={{ y: ["-100%", "200%"] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          />
+        </div>
+      </motion.div>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { UploadButton } from '@/lib/uploadthing';
@@ -9,11 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from '@/components/ui/table';
-// Tambahkan import Edit dan X
 import { Trash2, ImageOff, Newspaper, PlusCircle, Type, Image as ImageIcon, GripVertical, Edit, X } from 'lucide-react';
 
 // dnd-kit
@@ -38,9 +39,9 @@ type Block = { id: string; type: 'text' | 'image'; content: string };
 
 const uploadAppearance = {
   button:
-    'ut-ready:bg-primary ut-uploading:bg-primary/80 after:bg-primary/50 w-full rounded-md text-sm font-medium h-10 px-4',
+    'ut-ready:bg-primary ut-uploading:bg-primary/80 after:bg-primary/50 w-full rounded-md text-sm font-medium h-10 px-4 transition-all',
   container:
-    'w-full border border-dashed border-input rounded-lg p-6 flex-col gap-2 bg-muted/30',
+    'w-full border border-dashed border-input rounded-lg p-6 flex-col gap-2 bg-muted/30 hover:border-primary/50 transition-colors',
   allowedContent: 'text-muted-foreground text-xs',
 };
 
@@ -62,7 +63,6 @@ function SortableBlock({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : undefined,
   };
 
@@ -70,7 +70,10 @@ function SortableBlock({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex gap-3 items-start bg-muted/30 p-4 rounded-lg border"
+      className={cn(
+        "flex gap-3 items-start p-4 rounded-lg border transition-all duration-300",
+        isDragging ? "bg-card border-primary shadow-xl opacity-90 scale-[1.02]" : "bg-muted/30 border-border/50 hover:border-border"
+      )}
     >
       <button
         type="button"
@@ -98,12 +101,12 @@ function SortableBlock({
             placeholder="Tulis paragraf di sini..."
             value={block.content}
             onChange={(e) => onUpdate(block.id, e.target.value)}
-            className="min-h-[100px] bg-background"
+            className="min-h-[100px] bg-background border-border/50 focus:border-primary"
             required
           />
         ) : block.content ? (
           <div className="relative w-max">
-            <img src={block.content} alt="Block" className="h-28 rounded-lg shadow" />
+            <img src={block.content} alt="Block" className="h-28 rounded-lg shadow border border-border/50" />
             <Button
               type="button"
               size="icon"
@@ -121,8 +124,7 @@ function SortableBlock({
             onUploadError={(error: Error) => alert(`Gagal upload: ${error.message}`)}
             appearance={{
               ...uploadAppearance,
-              container:
-                'w-full border border-dashed border-input rounded-lg p-4 flex-col gap-2 bg-background',
+              container: 'w-full border border-dashed border-input rounded-lg p-4 flex-col gap-2 bg-background hover:border-primary/50 transition-colors',
             }}
           />
         )}
@@ -133,9 +135,10 @@ function SortableBlock({
           type="button"
           size="icon"
           variant="ghost"
+          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={() => onRemove(block.id)}
         >
-          <Trash2 className="h-4 w-4 text-destructive" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       )}
     </div>
@@ -147,7 +150,7 @@ export default function KelolaBerita() {
   const [berita, setBerita] = useState<any[]>([]);
   
   // States Form
-  const [editId, setEditId] = useState<string | null>(null); // State untuk menandai mode Edit
+  const [editId, setEditId] = useState<string | null>(null);
   const [judul, setJudul] = useState('');
   const [slug, setSlug] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
@@ -194,7 +197,6 @@ export default function KelolaBerita() {
     }
   };
 
-  // ─── FUNGSI RESET FORM ───
   const resetForm = () => {
     setEditId(null);
     setJudul(''); 
@@ -203,14 +205,12 @@ export default function KelolaBerita() {
     setBlocks([{ id: '1', type: 'text', content: '' }]);
   };
 
-  // ─── FUNGSI SUBMIT (CREATE & UPDATE) ───
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const finalBlocks = blocks.map((b) => ({ type: b.type, content: b.content }));
     
     if (editId) {
-      // UPDATE BERITA
       const { error } = await supabase
         .from('berita')
         .update({ judul, slug, gambar_cover: coverUrl, konten: finalBlocks })
@@ -223,7 +223,6 @@ export default function KelolaBerita() {
         alert('Gagal update: ' + error.message);
       }
     } else {
-      // INSERT BERITA BARU
       const { error } = await supabase.from('berita').insert([
         { judul, slug, gambar_cover: coverUrl, konten: finalBlocks },
       ]);
@@ -238,7 +237,6 @@ export default function KelolaBerita() {
     setLoading(false);
   };
 
-  // ─── FUNGSI EDIT BERITA (POPULATE KE FORM) ───
   const handleEdit = (item: any) => {
     setEditId(item.id);
     setJudul(item.judul);
@@ -255,7 +253,6 @@ export default function KelolaBerita() {
       setBlocks([{ id: '1', type: 'text', content: '' }]);
     }
     
-    // Scroll otomatis ke atas form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -267,27 +264,27 @@ export default function KelolaBerita() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-8 pb-10">
+      {/* Header Sesuai Aslinya */}
       <div className="flex items-center gap-3">
         <Newspaper className="h-7 w-7 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kelola Berita</h1>
-          <p className="text-muted-foreground text-sm">Buat dan kelola artikel berita</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Kelola Berita</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Buat dan kelola artikel berita</p>
         </div>
         <Badge variant="secondary" className="ml-auto">
           {berita.length} Artikel
         </Badge>
       </div>
 
-      {/* Form */}
-      <Card className={editId ? "border-primary/50 shadow-md" : ""}>
+      {/* Form Card */}
+      <Card className={cn("bg-card/50 backdrop-blur-xl border-border/60 shadow-sm transition-colors", editId && "border-primary/50 shadow-md ring-1 ring-primary/20")}>
         <CardHeader>
-          <CardTitle className="text-base flex justify-between items-center">
+          <CardTitle className="text-base flex justify-between items-center text-foreground">
             {editId ? "Edit Berita" : "Tambah Berita Baru"}
             {editId && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
-                Batal Edit
+              <Button type="button" variant="ghost" size="sm" onClick={resetForm} className="h-8 hover:text-destructive hover:bg-destructive/10">
+                <X className="w-4 h-4 mr-1" /> Batal Edit
               </Button>
             )}
           </CardTitle>
@@ -297,23 +294,23 @@ export default function KelolaBerita() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Judul Berita</Label>
-                <Input required value={judul} onChange={handleJudulChange} placeholder="Judul artikel..." />
+                <Label className="text-foreground">Judul Berita</Label>
+                <Input required value={judul} onChange={handleJudulChange} placeholder="Judul artikel..." className="bg-background" />
               </div>
               <div className="space-y-1.5">
-                <Label>Slug (Otomatis)</Label>
-                <Input value={slug} readOnly className="bg-muted text-muted-foreground" />
+                <Label className="text-foreground">Slug (Otomatis)</Label>
+                <Input value={slug} readOnly className="bg-muted text-muted-foreground border-transparent cursor-not-allowed" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Gambar Cover Utama</Label>
+              <Label className="text-foreground">Gambar Cover Utama</Label>
               {coverUrl ? (
                 <div className="relative w-max">
-                  <img src={coverUrl} alt="Cover" className="h-36 object-cover rounded-lg shadow" />
+                  <img src={coverUrl} alt="Cover" className="h-36 object-cover rounded-lg shadow border border-border/50" />
                   <Button
                     type="button" size="icon" variant="destructive"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md"
                     onClick={() => setCoverUrl('')}
                   >
                     <X className="h-4 w-4" />
@@ -329,11 +326,11 @@ export default function KelolaBerita() {
               )}
             </div>
 
-            <Separator />
+            <Separator className="bg-border/50" />
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">Susun Isi Berita</Label>
+                <Label className="text-sm font-semibold text-foreground">Susun Isi Berita</Label>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <GripVertical className="h-3 w-3" /> Drag untuk ubah urutan
                 </span>
@@ -356,17 +353,17 @@ export default function KelolaBerita() {
               </DndContext>
 
               <div className="flex gap-2 pt-1">
-                <Button type="button" variant="outline" size="sm" onClick={() => addBlock('text')}>
+                <Button type="button" variant="outline" size="sm" onClick={() => addBlock('text')} className="bg-background hover:bg-muted">
                   <PlusCircle className="h-4 w-4 mr-1" /> Tambah Teks
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => addBlock('image')}>
+                <Button type="button" variant="outline" size="sm" onClick={() => addBlock('image')} className="bg-background hover:bg-muted">
                   <PlusCircle className="h-4 w-4 mr-1" /> Tambah Gambar
                 </Button>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button type="submit" disabled={loading} className="w-full">
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={loading} className="w-full font-medium transition-all active:scale-[0.98]">
                 {loading ? 'Menyimpan...' : (editId ? 'Update Berita' : 'Simpan Berita Terbit')}
               </Button>
               {editId && (
@@ -379,21 +376,21 @@ export default function KelolaBerita() {
         </CardContent>
       </Card>
 
-      <Separator />
+      <Separator className="bg-border/50" />
 
       {/* Tabel Daftar Berita */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Daftar Berita</CardTitle>
+      <Card className="bg-card/50 backdrop-blur-xl border-border/60 shadow-sm overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-muted/20">
+          <CardTitle className="text-base text-foreground">Daftar Berita</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-24">Cover</TableHead>
-                <TableHead>Judul</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead className="text-center w-32">Aksi</TableHead>
+              <TableRow className="hover:bg-transparent border-border/50">
+                <TableHead className="w-24 pl-6 text-foreground">Cover</TableHead>
+                <TableHead className="text-foreground">Judul</TableHead>
+                <TableHead className="text-foreground">Slug</TableHead>
+                <TableHead className="text-center w-32 pr-6 text-foreground">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -405,29 +402,29 @@ export default function KelolaBerita() {
                 </TableRow>
               ) : (
                 berita.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
+                  <TableRow key={item.id} className="hover:bg-muted/40 transition-colors border-border/50">
+                    <TableCell className="pl-6">
                       {item.gambar_cover ? (
-                        <img src={item.gambar_cover} alt="Cover" className="w-14 h-14 object-cover rounded-md" />
+                        <img src={item.gambar_cover} alt="Cover" className="w-14 h-14 object-cover rounded-md border border-border/50" />
                       ) : (
-                        <div className="w-14 h-14 rounded-md bg-muted flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-md bg-muted flex items-center justify-center border border-border/50">
                           <ImageOff className="h-4 w-4 text-muted-foreground" />
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{item.judul}</TableCell>
+                    <TableCell className="font-medium text-foreground">{item.judul}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="font-mono text-xs">{item.slug}</Badge>
+                      <Badge variant="outline" className="font-mono text-xs font-normal border-border/50 bg-background/50">
+                        {item.slug}
+                      </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center pr-6">
                       <div className="flex justify-center gap-2">
-                        {/* TOMBOL EDIT */}
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
-                          <Edit className="h-4 w-4 text-blue-600" />
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-500 transition-colors" onClick={() => handleEdit(item)}>
+                          <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </Button>
-                        {/* TOMBOL DELETE */}
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>

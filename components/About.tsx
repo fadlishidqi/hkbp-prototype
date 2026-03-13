@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, RefObject } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Globe, Church, Clock, Trophy, Quote, MapPin, Star, Flame } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
 
-/* ── types ── */
+/* ── Types ── */
 interface Milestone {
   year: string;
   text: string;
@@ -16,17 +17,8 @@ interface Stat {
   label: string;
   icon: LucideIcon;
 }
-interface StatCardProps {
-  s: Stat;
-  run: boolean;
-  delay: number;
-}
-interface CountUpProps {
-  target: string;
-  run: boolean;
-}
 
-/* ── data ── */
+/* ── Data ── */
 const milestones: Milestone[] = [
   { year: "1861", text: "HKBP didirikan pada 7 Oktober di Sipirok oleh empat misionaris RMG.", icon: MapPin },
   { year: "1881", text: "Ludwig Nommensen diangkat sebagai Ephorus pertama HKBP.", icon: Star },
@@ -34,281 +26,187 @@ const milestones: Milestone[] = [
   { year: "1952", text: "HKBP bergabung dengan Federasi Lutheran Sedunia (LWF) di Jenewa.", icon: Globe },
   { year: "2026", text: "165 tahun — lebih dari 6,5 juta jemaat di seluruh dunia.", icon: Flame, highlight: true },
 ];
+
 const stats: Stat[] = [
-  { value: "6.5 Jt+", label: "Jemaat di Dunia",                   icon: Globe  },
-  { value: "3.800+",  label: "Gereja di Indonesia",                icon: Church },
-  { value: "165",     label: "Tahun Pelayanan",                    icon: Clock  },
+  { value: "6.5 Jt+", label: "Jemaat di Dunia",                 icon: Globe },
+  { value: "3.800+",  label: "Gereja di Indonesia",             icon: Church },
+  { value: "165",     label: "Tahun Pelayanan",                 icon: Clock },
   { value: "#1",      label: "Gereja Protestan Terbesar Indonesia", icon: Trophy },
 ];
 
-/* ── helpers ── */
-function useInView(threshold = 0.15): [RefObject<HTMLDivElement | null>, boolean] {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const o = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setVis(true); },
-      { threshold }
-    );
-    if (ref.current) o.observe(ref.current);
-    return () => o.disconnect();
-  }, []);
-  return [ref, vis];
-}
-
-function CountUp({ target, run }: CountUpProps) {
+/* ── Helper Component: Number Counter ── */
+function CountUp({ target }: { target: string }) {
   const [n, setN] = useState(0);
+  const [hasRun, setHasRun] = useState(false);
   const num = parseFloat(target.replace(/[^0-9.]/g, ""));
   const ok  = !isNaN(num) && num > 1;
+
   useEffect(() => {
-    if (!run || !ok) return;
+    if (!hasRun || !ok) return;
     let cur = 0;
-    const inc = num / (1600 / 16);
+    const inc = num / (1600 / 16); 
     const t = setInterval(() => {
       cur += inc;
       if (cur >= num) { setN(num); clearInterval(t); }
       else setN(Math.floor(cur * 10) / 10);
     }, 16);
     return () => clearInterval(t);
-  }, [run]);
+  }, [hasRun, num, ok]);
+
   if (!ok) return <span>{target}</span>;
+  
   const suf  = target.replace(/[0-9.]/g, "");
   const disp = n % 1 === 0 ? n.toLocaleString("id") : n.toFixed(1).replace(".", ",");
-  return <span>{disp}{suf}</span>;
-}
-
-function StatCard({ s, run, delay }: StatCardProps) {
-  const Icon = s.icon;
-  const [hov, setHov] = useState(false);
+  
   return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        opacity:   run ? 1 : 0,
-        transform: run ? "translateY(0)" : "translateY(28px)",
-        transition: `opacity .6s ease ${delay}ms, transform .6s ease ${delay}ms,
-                     border-color .25s, box-shadow .25s`,
-        background: "var(--card)",
-        border:     `1px solid ${hov ? "var(--brand)" : "var(--border)"}`,
-        borderRadius: 16,
-        padding: "16px 14px",
-        position: "relative",
-        overflow: "hidden",
-        cursor: "default",
-        boxShadow: hov ? "0 12px 40px rgba(0,0,0,.15)" : "none",
-      }}
+    <motion.span 
+      onViewportEnter={() => setHasRun(true)} 
+      viewport={{ once: true }}
     >
-      <div style={{
-        position: "absolute", top: -20, right: -20,
-        width: 80, height: 80,
-        background: "var(--brand)",
-        opacity: hov ? 0.08 : 0.04,
-        borderRadius: "50%",
-        filter: "blur(18px)",
-        transition: "opacity .25s",
-      }} />
-      <Icon size={18} color="var(--brand)" style={{ marginBottom: 8, opacity: .85 }} />
-      <p style={{ fontSize: 22, fontWeight: 800, color: "var(--brand)", margin: 0, lineHeight: 1 }}>
-        <CountUp target={s.value} run={run} />
-      </p>
-      <p style={{ fontSize: 10, color: "var(--muted-foreground)", marginTop: 5, lineHeight: 1.4, fontWeight: 500 }}>
-        {s.label}
-      </p>
-    </div>
+      {disp}{suf}
+    </motion.span>
   );
 }
 
-/* ── main ── */
+/* ── Main Component ── */
 export default function About() {
-  const [headerRef, headerVis] = useInView();
-  const [tlRef,     tlVis]     = useInView(0.1);
-  const [statsRef,  statsVis]  = useInView();
+  // IMPROVEMENT: Deteksi Scroll untuk efek Parallax
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
 
-  const [revealed, setRevealed] = useState(-1);
-  const [linePct,  setLinePct]  = useState(0);
-
-  const STEP_DELAY    = 600;
-  const LINE_DURATION = 500;
-
-  useEffect(() => {
-    if (!tlVis) return;
-    let step = 0;
-
-    function showNext() {
-      if (step >= milestones.length) return;
-      const targetPct = (step / (milestones.length - 1)) * 100;
-      const startPct  = step === 0 ? 0 : ((step - 1) / (milestones.length - 1)) * 100;
-      const startTime = performance.now();
-
-      function animLine(now: number) {
-        const t    = Math.min((now - startTime) / LINE_DURATION, 1);
-        const ease = 1 - Math.pow(1 - t, 3);
-        setLinePct(startPct + (targetPct - startPct) * ease);
-        if (t < 1) {
-          requestAnimationFrame(animLine);
-        } else {
-          setRevealed(step);
-          step++;
-          if (step < milestones.length) setTimeout(showNext, STEP_DELAY);
-        }
-      }
-      requestAnimationFrame(animLine);
-    }
-
-    setTimeout(showNext, 300);
-  }, [tlVis]);
+  // Kolom Kiri bergeser sedikit ke atas, Kolom Kanan bergeser sedikit ke bawah (Efek Kedalaman)
+  const yLeft = useTransform(scrollYProgress, [0, 1], [0, -30]);
+  const yRight = useTransform(scrollYProgress, [0, 1], [30, -30]);
 
   return (
-    <section id="about" className="py-20 sm:py-32 px-4 sm:px-6 scroll-mt-20 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
+    <section ref={containerRef} id="about" className="py-20 sm:py-32 px-4 sm:px-6 scroll-mt-20 overflow-hidden relative">
+      <div className="max-w-6xl mx-auto relative z-10">
 
         {/* HEADER */}
-        <div ref={headerRef}>
-          <div style={{
-            opacity:   headerVis ? 1 : 0,
-            transform: headerVis ? "translateY(0)" : "translateY(40px)",
-            transition: "opacity .8s ease, transform .8s ease",
-            maxWidth: 680, marginBottom: 48,
-          }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              background: "color-mix(in srgb, var(--brand) 10%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
-              borderRadius: 999, padding: "5px 14px", marginBottom: 16,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand)", display: "inline-block", flexShrink: 0 }} />
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", color: "var(--brand)", textTransform: "uppercase" }}>
-                Tentang HKBP
-              </span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4 sm:mb-6">
-              165 Tahun Iman,{" "}
-              <span style={{ color: "var(--brand)" }}>Satu Warisan Abadi</span>
-            </h2>
-
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
-              Huria Kristen Batak Protestan adalah gereja Protestan terbesar di Indonesia,
-              didirikan tahun 1861 di tanah Batak. Kini, di usia ke-165, kami merayakan
-              perjalanan iman yang telah menyentuh jutaan jiwa.
-            </p>
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-[680px] mb-12"
+        >
+          <div className="inline-flex items-center gap-2 px-[14px] py-[5px] rounded-full bg-brand/10 border border-brand/30 mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
+            <span className="text-[10px] font-bold tracking-[0.18em] text-brand uppercase">
+              Tentang HKBP
+            </span>
           </div>
-        </div>
 
-        {/* GRID */}
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold leading-tight mb-4 sm:mb-6 text-foreground">
+            165 Tahun Iman,{" "}
+            <span className="text-brand">Satu Warisan Abadi</span>
+          </h2>
+
+          <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+            Huria Kristen Batak Protestan adalah gereja Protestan terbesar di Indonesia,
+            didirikan tahun 1861 di tanah Batak. Kini, di usia ke-165, kami merayakan
+            perjalanan iman yang telah menyentuh jutaan jiwa.
+          </p>
+        </motion.div>
+
+        {/* GRID CONTENT */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 lg:gap-20 items-start">
 
-          {/* TIMELINE */}
-          <div ref={tlRef}>
-            <div style={{ position: "relative", paddingLeft: 32 }}>
+          {/* TIMELINE (Kiri) - Dibungkus dengan motion.div untuk Parallax */}
+          <motion.div style={{ y: yLeft }} className="relative pl-8">
+            <div className="absolute left-[9px] top-2 bottom-2 w-[2px] bg-border rounded-full" />
+            
+            <motion.div 
+              initial={{ height: 0 }}
+              whileInView={{ height: "100%" }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              className="absolute left-[9px] top-2 w-[2px] bg-brand rounded-full shadow-[0_0_8px_var(--brand)] origin-top"
+            />
 
-              {/* track */}
-              <div style={{
-                position: "absolute", left: 9, top: 8, bottom: 8,
-                width: 2, background: "var(--border)", borderRadius: 2,
-              }} />
-              {/* fill */}
-              <div style={{
-                position: "absolute", left: 9, top: 8,
-                width: 2, borderRadius: 2,
-                height: `calc(${linePct}% * ((100% - 16px) / 100%))`,
-                background: "var(--brand)",
-                boxShadow: "0 0 8px color-mix(in srgb, var(--brand) 50%, transparent)",
-              }} />
-
+            <div className="flex flex-col gap-8">
               {milestones.map((m, i) => {
                 const Icon = m.icon;
-                const show = revealed >= i;
                 return (
-                  <div key={m.year} style={{
-                    display: "flex", gap: 16, alignItems: "flex-start",
-                    marginBottom: i < milestones.length - 1 ? 32 : 0,
-                    opacity:   show ? 1 : 0,
-                    transform: show ? "translateX(0)" : "translateX(-16px)",
-                    transition: "opacity .45s ease, transform .45s ease",
-                  }}>
-                    {/* dot */}
-                    <div style={{
-                      position: "relative", zIndex: 2, flexShrink: 0,
-                      width:  m.highlight ? 22 : 18,
-                      height: m.highlight ? 22 : 18,
-                      borderRadius: "50%",
-                      background:   show ? (m.highlight ? "var(--brand)" : "var(--background)") : "var(--background)",
-                      border: `2px solid ${show ? "var(--brand)" : "var(--border)"}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      transition: "background .4s, border-color .4s, box-shadow .4s",
-                      boxShadow: m.highlight && show
-                        ? "0 0 14px color-mix(in srgb, var(--brand) 60%, transparent)"
-                        : "none",
-                      marginLeft: m.highlight ? -2 : 0,
-                    }}>
-                      <Icon
-                        size={m.highlight ? 11 : 9}
-                        color={show ? (m.highlight ? "var(--background)" : "var(--brand)") : "transparent"}
-                        strokeWidth={2.5}
+                  <motion.div 
+                    key={m.year} 
+                    initial={{ opacity: 0, x: -16 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.45, delay: i * 0.2 }}
+                    className="relative flex items-start gap-4 group"
+                  >
+                    <div className={`relative z-10 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all duration-400
+                      ${m.highlight 
+                        ? "w-[22px] h-[22px] -ml-[2px] bg-brand border-brand shadow-[0_0_14px_var(--brand)]" 
+                        : "w-[18px] h-[18px] ml-0 bg-background border-border group-hover:border-brand"}`}
+                    >
+                      <Icon 
+                        size={m.highlight ? 11 : 9} 
+                        className={m.highlight ? "text-background" : "text-brand opacity-0 group-hover:opacity-100 transition-opacity"} 
+                        strokeWidth={2.5} 
                       />
                     </div>
 
-                    <div style={{ paddingTop: 1 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, letterSpacing: "0.18em",
-                        color: "var(--brand)", textTransform: "uppercase",
-                        opacity: m.highlight ? 1 : 0.75,
-                      }}>
+                    <div className="pt-[1px]">
+                      <span className={`text-[10px] font-bold tracking-[0.18em] uppercase ${m.highlight ? "text-brand opacity-100" : "text-brand opacity-75"}`}>
                         {m.year}
                       </span>
-                      <p style={{
-                        fontSize: 13,
-                        color: m.highlight ? "var(--foreground)" : "var(--muted-foreground)",
-                        margin: "3px 0 0", lineHeight: 1.65,
-                        fontWeight: m.highlight ? 500 : 400,
-                      }}>
+                      <p className={`mt-[3px] text-[13px] leading-[1.65] ${m.highlight ? "text-foreground font-medium" : "text-muted-foreground font-normal"}`}>
                         {m.text}
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
-          </div>
+          </motion.div>
 
-          {/* STATS + QUOTE */}
-          <div ref={statsRef} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* 2-col grid — works well on all sizes since cards are compact */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 12,
-            }}>
+          {/* STATS + QUOTE (Kanan) - Dibungkus dengan motion.div untuk Parallax */}
+          <motion.div style={{ y: yRight }} className="flex flex-col gap-4">
+            
+            <div className="grid grid-cols-2 gap-3">
               {stats.map((s, i) => (
-                <StatCard key={s.label} s={s} run={statsVis} delay={i * 100} />
+                <motion.div
+                  key={s.label}
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.6, delay: i * 0.1 }}
+                  className="group relative overflow-hidden rounded-[16px] bg-card border border-border p-[16px_14px] hover:border-brand hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] transition-all duration-250 cursor-default"
+                >
+                  <div className="absolute -top-[20px] -right-[20px] w-[80px] h-[80px] bg-brand opacity-5 group-hover:opacity-10 rounded-full blur-[18px] transition-opacity duration-250" />
+                  <s.icon size={18} className="text-brand mb-2 opacity-85" />
+                  <h3 className="text-[22px] font-extrabold text-brand mb-0 leading-none font-heading">
+                    <CountUp target={s.value} />
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-[5px] leading-[1.4]">
+                    {s.label}
+                  </p>
+                </motion.div>
               ))}
             </div>
 
-            {/* quote */}
-            <div style={{
-              opacity:   statsVis ? 1 : 0,
-              transform: statsVis ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity .7s ease 480ms, transform .7s ease 480ms",
-              borderLeft: "3px solid var(--brand)",
-              paddingLeft: 16, paddingTop: 14, paddingBottom: 14, paddingRight: 14,
-              background: "color-mix(in srgb, var(--brand) 5%, transparent)",
-              borderRadius: "0 14px 14px 0",
-            }}>
-              <Quote size={16} color="var(--brand)" style={{ marginBottom: 8, opacity: .6 }} />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.7, delay: 0.48 }}
+              className="relative rounded-[0_14px_14px_0] bg-brand/5 border-l-[3px] border-l-brand p-[14px_14px_14px_16px]"
+            >
+              <Quote size={16} className="text-brand opacity-60 mb-2" />
               <p className="text-sm text-foreground italic leading-relaxed mb-3">
-                HKBP terbuka bagi seluruh kelompok etnis dan bangsa, membawa terang
-                Injil dari tanah Batak ke seluruh dunia.
+                HKBP terbuka bagi seluruh kelompok etnis dan bangsa, membawa terang Injil dari tanah Batak ke seluruh dunia.
               </p>
-              <footer style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.15em",
-                color: "var(--brand)", textTransform: "uppercase",
-              }}>
+              <footer className="text-[10px] font-bold tracking-[0.15em] text-brand uppercase">
                 — Pengakuan Iman HKBP
               </footer>
-            </div>
-          </div>
+            </motion.div>
+
+          </motion.div>
         </div>
       </div>
     </section>

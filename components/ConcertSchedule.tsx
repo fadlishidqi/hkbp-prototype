@@ -1,32 +1,7 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
 
-function Reveal({ children, delay = 0, className = '' }: {
-  children: React.ReactNode; delay?: number; className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        setTimeout(() => {
-          el.style.opacity = '1';
-          el.style.transform = 'translateY(0)';
-        }, delay);
-        obs.disconnect();
-      }
-    }, { threshold: 0.08 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [delay]);
-  return (
-    <div ref={ref} className={className} style={{
-      opacity: 0, transform: 'translateY(24px)',
-      transition: 'opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1)',
-    }}>{children}</div>
-  );
-}
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const concerts = [
   { no: 1,  city: 'Surabaya',     date: '2026-02-13', display: "Jum'at, 13 Feb 2026",  venue: 'MPH Ciputra World',      region: 'Jawa Timur'         },
@@ -64,8 +39,7 @@ const regionColors: Record<string, string> = {
 };
 
 export default function ConcertSchedule() {
-  const [filter, setFilter]   = useState<'all' | 'upcoming' | 'done'>('all');
-  const [hovered, setHovered] = useState<number | null>(null);
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'done'>('upcoming');
 
   const upcomingCount = concerts.filter(c => getStatus(c.date) !== 'done').length;
   const doneCount     = concerts.length - upcomingCount;
@@ -78,169 +52,168 @@ export default function ConcertSchedule() {
   });
 
   return (
-    <section id="jadwal" className="py-32 px-6 scroll-mt-20 bg-background">
-      <div className="max-w-6xl mx-auto">
+    <section id="jadwal" className="py-32 px-6 scroll-mt-20 bg-background relative overflow-hidden">
+      <div className="max-w-6xl mx-auto relative z-10">
 
-        {/* Header */}
-        <Reveal>
-          <div className="text-center mb-16">
-            <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase mb-5"
-              style={{ color: 'var(--brand)' }}>
-              Anak ni Raja Production × HKBP
-            </span>
-            <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground mb-5">
-              Konser Road to 165
-            </h2>
-            <p className="max-w-xl mx-auto leading-relaxed text-sm md:text-base text-muted-foreground">
-              Charity concert di{' '}
-              <span className="text-foreground font-semibold">165 kota</span>{' '}
-              Indonesia &amp; luar negeri. Seluruh hasil disumbangkan untuk Puncak HUT ke-165 HKBP, Oktober 2026.
-            </p>
-          </div>
-        </Reveal>
+        {/* HEADER */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center mb-16"
+        >
+          <span className="inline-block text-xs font-bold tracking-[0.2em] uppercase mb-5 text-brand">
+            Anak ni Raja Production × HKBP
+          </span>
+          {/* Implementasi font-heading untuk kesan megah */}
+          <h2 className="text-4xl md:text-6xl font-heading font-bold tracking-tight text-foreground mb-5">
+            Konser Road to 165
+          </h2>
+          <p className="max-w-xl mx-auto leading-relaxed text-sm md:text-base text-muted-foreground">
+            Charity concert di{' '}
+            <span className="text-foreground font-semibold">165 kota</span>{' '}
+            Indonesia &amp; luar negeri. Seluruh hasil disumbangkan untuk Puncak HUT ke-165 HKBP, Oktober 2026.
+          </p>
+        </motion.div>
 
-        {/* Filter pills */}
-        <Reveal delay={120}>
-          <div className="flex justify-center gap-2 mb-12">
-            {([
-              { key: 'all',      label: `Semua · ${concerts.length}` },
-              { key: 'upcoming', label: `Akan Datang · ${upcomingCount}` },
-              { key: 'done',     label: `Selesai · ${doneCount}` },
-            ] as const).map(f => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className="px-5 py-2 rounded-full text-xs font-semibold border transition-all duration-300"
-                style={filter === f.key
-                  ? { background: 'var(--brand)', color: 'var(--brand-foreground)', borderColor: 'var(--brand)' }
-                  : { background: 'transparent', color: 'var(--muted-foreground)', borderColor: 'var(--border)' }
-                }
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </Reveal>
+        {/* FILTER PILLS */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex flex-wrap justify-center gap-2 mb-12"
+        >
+          {([
+            { key: 'all',      label: `Semua · ${concerts.length}` },
+            { key: 'upcoming', label: `Akan Datang · ${upcomingCount}` },
+            { key: 'done',     label: `Selesai · ${doneCount}` },
+          ] as const).map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-5 py-2 rounded-full text-xs font-semibold border transition-all duration-500
+                ${filter === f.key 
+                  ? 'bg-brand text-brand-foreground border-brand shadow-[0_4px_14px_0_var(--brand-muted)]' 
+                  : 'bg-transparent text-muted-foreground border-border hover:border-brand/50 hover:text-foreground'}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </motion.div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((c, i) => {
-            const status  = getStatus(c.date);
-            const isDone  = status === 'done';
-            const isToday = status === 'today';
-            const isHover = hovered === c.no && !isDone;
-            const col     = regionColors[c.region] ?? '#94a3b8';
+        {/* CARDS GRID (Fluid Animation with AnimatePresence) */}
+        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <AnimatePresence mode="popLayout">
+            {filtered.map((c, i) => {
+              const status  = getStatus(c.date);
+              const isDone  = status === 'done';
+              const isToday = status === 'today';
+              const col     = regionColors[c.region] ?? '#94a3b8';
 
-            return (
-              <Reveal key={c.no} delay={i * 60}>
-                <div
-                  onMouseEnter={() => !isDone && setHovered(c.no)}
-                  onMouseLeave={() => setHovered(null)}
-                  className="relative rounded-2xl flex flex-col gap-5 p-7 h-full overflow-hidden"
+              return (
+                <motion.div
+                  layout // Ini yang membuat kartu bergeser mulus saat di-filter
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  transition={{ duration: 0.5, delay: i * 0.05 }} // Stagger cascade efek
+                  key={c.no}
+                  className={`group relative rounded-2xl flex flex-col gap-5 p-7 h-full overflow-hidden border transition-all duration-700
+                    ${isDone ? 'bg-card/50 border-border/50 opacity-60 grayscale-[30%]' : 'bg-card border-border hover:-translate-y-1 hover:shadow-2xl cursor-pointer'}`}
                   style={{
-                    background: 'var(--card)',
-                    border: `1px solid ${isHover ? `${col}50` : 'var(--border)'}`,
-                    transform: isHover ? 'translateY(-4px)' : 'none',
-                    opacity: isDone ? 0.45 : 1,
-                    boxShadow: isHover ? `0 0 0 1px ${col}25, 0 12px 40px ${col}20` : 'none',
-                    cursor: isDone ? 'default' : 'pointer',
-                    transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1), border-color 0.8s ease, box-shadow 0.8s ease, opacity 0.3s ease',
+                    // Inject custom property untuk efek hover glow CSS (lebih rapi dibanding inline JS event)
+                    ['--card-color' as string]: col,
                   }}
                 >
-                  {/* Lamp glow — radial from top, brighter */}
-                  <div
-                    className="absolute inset-0 pointer-events-none rounded-2xl"
-                    style={{
-                      background: `radial-gradient(ellipse 90% 55% at 50% 0%, ${col}35 0%, transparent 65%)`,
-                      opacity: isHover ? 1 : 0,
-                      transition: 'opacity 1s ease',
-                    }}
-                  />
+                  {/* Efek Pendaran Cahaya (Glow) saat di hover murni pakai Tailwind CSS */}
+                  {!isDone && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                      style={{ background: `radial-gradient(ellipse 90% 55% at 50% 0%, ${col}25 0%, transparent 65%)` }}
+                    />
+                  )}
 
-                  {/* Number + status */}
+                  {/* Header Kartu (Nomor & Status) */}
                   <div className="flex items-center justify-between relative z-10">
-                    <span className="text-xs font-bold tabular-nums select-none text-muted-foreground/30">
+                    <span className="text-xs font-bold tabular-nums select-none text-muted-foreground/30 transition-colors duration-500 group-hover:text-foreground/20">
                       {String(c.no).padStart(2, '0')}
                     </span>
                     {isToday && (
-                      <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1
-                                       rounded-full animate-pulse"
-                        style={{ background: 'var(--brand)', color: 'var(--brand-foreground)' }}>
+                      <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full animate-pulse bg-brand text-brand-foreground shadow-sm">
                         Hari Ini
                       </span>
                     )}
                     {isDone && (
-                      <span className="text-[10px] font-medium text-muted-foreground/40">
+                      <span className="text-[10px] font-medium text-muted-foreground/50 bg-muted/50 px-3 py-1 rounded-full">
                         Selesai ✓
                       </span>
                     )}
                   </div>
 
-                  {/* City + date */}
+                  {/* Konten Utama (Kota & Tanggal) */}
                   <div className="flex flex-col gap-1.5 relative z-10">
-                    <h3
-                      className="text-xl font-bold leading-tight"
-                      style={{
-                        color: isHover ? 'var(--foreground)' : 'var(--foreground)',
-                        opacity: isHover ? 1 : 0.85,
-                        transition: 'opacity 0.6s ease',
-                      }}
-                    >
+                    <h3 className="text-xl font-heading font-bold leading-tight text-foreground/90 group-hover:text-foreground transition-colors duration-500">
                       {c.city}
                     </h3>
-                    <p className="text-sm text-muted-foreground">{c.display}</p>
+                    <p className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors duration-500">
+                      {c.display}
+                    </p>
                   </div>
 
-                  {/* Region pill — slides in on hover */}
-                  <div className="relative z-10" style={{
-                    maxHeight: isHover ? '32px' : '0px',
-                    opacity: isHover ? 1 : 0,
-                    overflow: 'hidden',
-                    transition: 'max-height 0.5s ease, opacity 0.5s ease',
-                  }}>
-                    <span
-                      className="inline-block text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full"
-                      style={{ background: `${col}20`, color: col }}
-                    >
-                      {c.region}
-                    </span>
-                  </div>
+                  {/* Badge Region (Slide Down dari nol saat di Hover) */}
+                  {!isDone && (
+                    <div className="relative z-10 grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 opacity-0 group-hover:opacity-100 mt-[-5px] group-hover:mt-0">
+                      <div className="overflow-hidden">
+                        <span 
+                          className="inline-block text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full"
+                          style={{ background: `${col}20`, color: col }}
+                        >
+                          {c.region}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Venue */}
-                  <div className="flex items-center gap-2 mt-auto pt-5 border-t border-border relative z-10">
-                    <svg className="w-3 h-3 text-muted-foreground/40 flex-shrink-0"
+                  {/* Venue / Lokasi */}
+                  <div className="flex items-center gap-2 mt-auto pt-5 border-t border-border/50 group-hover:border-border transition-colors duration-500 relative z-10">
+                    <svg className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0 group-hover:text-[var(--card-color)] transition-colors duration-500"
                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    <span className="text-xs text-muted-foreground">{c.venue}</span>
+                    <span className="text-xs text-muted-foreground font-medium group-hover:text-foreground/80 transition-colors duration-500">
+                      {c.venue}
+                    </span>
                   </div>
 
-                  {/* Bottom accent line */}
+                  {/* Garis Aksen Bawah (Meluas saat di-hover) */}
                   {!isDone && (
                     <div
-                      className="absolute bottom-0 left-0 h-[1.5px] rounded-b-2xl"
-                      style={{
-                        width: isHover ? '100%' : '0%',
-                        background: `linear-gradient(to right, transparent, ${col}, transparent)`,
-                        transition: 'width 0.9s cubic-bezier(0.16,1,0.3,1)',
-                      }}
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-b-2xl w-0 group-hover:w-full transition-all duration-700 ease-in-out"
+                      style={{ background: `linear-gradient(to right, transparent, ${col}, transparent)` }}
                     />
                   )}
-                </div>
-              </Reveal>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
 
-        {/* Footer note */}
-        <Reveal delay={200}>
-          <p className="text-center text-sm italic mt-14 text-muted-foreground">
+        {/* FOOTER NOTE */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, delay: 0.6 }}
+        >
+          <p className="text-center text-sm italic mt-14 text-muted-foreground font-medium">
             Kota-kota berikutnya akan terus diumumkan. Mari dukung &amp; doakan. Tuhan memberkati
           </p>
-        </Reveal>
+        </motion.div>
 
       </div>
     </section>
