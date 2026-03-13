@@ -6,6 +6,7 @@ import ConcertSchedule from '@/components/ConcertSchedule';
 import Berita from '@/components/Berita';
 import Tiket from '@/components/Tiket';
 import Footer from '@/components/Footer';
+import { error } from 'console';
 
 export const revalidate = 0;
 
@@ -14,6 +15,7 @@ export default async function Home() {
     .from('berita')
     .select('*')
     .order('created_at', { ascending: false });
+    console.log('error:', error);
 
   const { data: tiket } = await supabase
     .from('tiket')

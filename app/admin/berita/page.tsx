@@ -13,7 +13,8 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Trash2, ImageOff, Newspaper, PlusCircle, Type, Image, GripVertical } from 'lucide-react';
+// Tambahkan import Edit dan X
+import { Trash2, ImageOff, Newspaper, PlusCircle, Type, Image as ImageIcon, GripVertical, Edit, X } from 'lucide-react';
 
 // dnd-kit
 import {
@@ -71,7 +72,6 @@ function SortableBlock({
       style={style}
       className="flex gap-3 items-start bg-muted/30 p-4 rounded-lg border"
     >
-      {/* Drag Handle */}
       <button
         type="button"
         className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors touch-none"
@@ -81,7 +81,6 @@ function SortableBlock({
         <GripVertical className="h-5 w-5" />
       </button>
 
-      {/* Badge tipe */}
       <Badge
         variant={block.type === 'text' ? 'default' : 'secondary'}
         className="mt-1 shrink-0 flex items-center gap-1"
@@ -89,11 +88,10 @@ function SortableBlock({
         {block.type === 'text' ? (
           <><Type className="h-3 w-3" /> TEKS</>
         ) : (
-          <><Image className="h-3 w-3" /> GAMBAR</>
+          <><ImageIcon className="h-3 w-3" /> GAMBAR</>
         )}
       </Badge>
 
-      {/* Konten */}
       <div className="flex-1">
         {block.type === 'text' ? (
           <Textarea
@@ -113,7 +111,7 @@ function SortableBlock({
               className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
               onClick={() => onUpdate(block.id, '')}
             >
-              ✕
+              <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (
@@ -130,7 +128,6 @@ function SortableBlock({
         )}
       </div>
 
-      {/* Hapus */}
       {canRemove && (
         <Button
           type="button"
@@ -148,6 +145,9 @@ function SortableBlock({
 // ─── Main Page ────────────────────────────────────────────
 export default function KelolaBerita() {
   const [berita, setBerita] = useState<any[]>([]);
+  
+  // States Form
+  const [editId, setEditId] = useState<string | null>(null); // State untuk menandai mode Edit
   const [judul, setJudul] = useState('');
   const [slug, setSlug] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
@@ -194,21 +194,69 @@ export default function KelolaBerita() {
     }
   };
 
+  // ─── FUNGSI RESET FORM ───
+  const resetForm = () => {
+    setEditId(null);
+    setJudul(''); 
+    setSlug(''); 
+    setCoverUrl('');
+    setBlocks([{ id: '1', type: 'text', content: '' }]);
+  };
+
+  // ─── FUNGSI SUBMIT (CREATE & UPDATE) ───
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const finalBlocks = blocks.map((b) => ({ type: b.type, content: b.content }));
-    const { error } = await supabase.from('berita').insert([
-      { judul, slug, gambar_cover: coverUrl, konten: finalBlocks },
-    ]);
-    if (!error) {
-      setJudul(''); setSlug(''); setCoverUrl('');
-      setBlocks([{ id: '1', type: 'text', content: '' }]);
-      fetchBerita();
+    
+    if (editId) {
+      // UPDATE BERITA
+      const { error } = await supabase
+        .from('berita')
+        .update({ judul, slug, gambar_cover: coverUrl, konten: finalBlocks })
+        .eq('id', editId);
+
+      if (!error) {
+        resetForm();
+        fetchBerita();
+      } else {
+        alert('Gagal update: ' + error.message);
+      }
     } else {
-      alert('Gagal menyimpan: ' + error.message);
+      // INSERT BERITA BARU
+      const { error } = await supabase.from('berita').insert([
+        { judul, slug, gambar_cover: coverUrl, konten: finalBlocks },
+      ]);
+      
+      if (!error) {
+        resetForm();
+        fetchBerita();
+      } else {
+        alert('Gagal menyimpan: ' + error.message);
+      }
     }
     setLoading(false);
+  };
+
+  // ─── FUNGSI EDIT BERITA (POPULATE KE FORM) ───
+  const handleEdit = (item: any) => {
+    setEditId(item.id);
+    setJudul(item.judul);
+    setSlug(item.slug);
+    setCoverUrl(item.gambar_cover || '');
+    
+    if (item.konten && Array.isArray(item.konten)) {
+      setBlocks(item.konten.map((b: any, i: number) => ({
+        id: i.toString(),
+        type: b.type,
+        content: b.content
+      })));
+    } else {
+      setBlocks([{ id: '1', type: 'text', content: '' }]);
+    }
+    
+    // Scroll otomatis ke atas form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id: string) => {
@@ -233,14 +281,20 @@ export default function KelolaBerita() {
       </div>
 
       {/* Form */}
-      <Card>
+      <Card className={editId ? "border-primary/50 shadow-md" : ""}>
         <CardHeader>
-          <CardTitle className="text-base">Tambah Berita Baru</CardTitle>
+          <CardTitle className="text-base flex justify-between items-center">
+            {editId ? "Edit Berita" : "Tambah Berita Baru"}
+            {editId && (
+              <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
+                Batal Edit
+              </Button>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Judul & Slug */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Judul Berita</Label>
@@ -252,7 +306,6 @@ export default function KelolaBerita() {
               </div>
             </div>
 
-            {/* Cover */}
             <div className="space-y-1.5">
               <Label>Gambar Cover Utama</Label>
               {coverUrl ? (
@@ -262,7 +315,9 @@ export default function KelolaBerita() {
                     type="button" size="icon" variant="destructive"
                     className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                     onClick={() => setCoverUrl('')}
-                  >✕</Button>
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
               ) : (
                 <UploadButton
@@ -276,7 +331,6 @@ export default function KelolaBerita() {
 
             <Separator />
 
-            {/* Content Blocks — Drag & Drop */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">Susun Isi Berita</Label>
@@ -285,15 +339,8 @@ export default function KelolaBerita() {
                 </span>
               </div>
 
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={blocks.map((b) => b.id)}
-                  strategy={verticalListSortingStrategy}
-                >
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {blocks.map((block) => (
                       <SortableBlock
@@ -308,7 +355,6 @@ export default function KelolaBerita() {
                 </SortableContext>
               </DndContext>
 
-              {/* Tambah Blok */}
               <div className="flex gap-2 pt-1">
                 <Button type="button" variant="outline" size="sm" onClick={() => addBlock('text')}>
                   <PlusCircle className="h-4 w-4 mr-1" /> Tambah Teks
@@ -319,9 +365,16 @@ export default function KelolaBerita() {
               </div>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Menyimpan Berita...' : 'Simpan Berita Terbit'}
-            </Button>
+            <div className="flex gap-3">
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? 'Menyimpan...' : (editId ? 'Update Berita' : 'Simpan Berita Terbit')}
+              </Button>
+              {editId && (
+                <Button type="button" variant="secondary" onClick={resetForm} className="w-full sm:w-auto">
+                  Batal
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -340,7 +393,7 @@ export default function KelolaBerita() {
                 <TableHead className="w-24">Cover</TableHead>
                 <TableHead>Judul</TableHead>
                 <TableHead>Slug</TableHead>
-                <TableHead className="text-center w-24">Aksi</TableHead>
+                <TableHead className="text-center w-32">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -367,9 +420,16 @@ export default function KelolaBerita() {
                       <Badge variant="outline" className="font-mono text-xs">{item.slug}</Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-center gap-2">
+                        {/* TOMBOL EDIT */}
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
+                          <Edit className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        {/* TOMBOL DELETE */}
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

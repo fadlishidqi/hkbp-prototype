@@ -5,11 +5,9 @@ import { notFound } from 'next/navigation';
 
 export const revalidate = 0;
 
-export default async function DetailBerita({ params }: { params: { slug: string } }) {
-  // Ambil parameter slug dari URL
+export default async function DetailBerita({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  // Cari berita berdasarkan slug
   const { data: berita } = await supabase
     .from('berita')
     .select('*')
@@ -18,44 +16,131 @@ export default async function DetailBerita({ params }: { params: { slug: string 
 
   if (!berita) notFound();
 
-  return (
-    <div className="bg-white min-h-screen text-gray-800">
-      <nav className="bg-white shadow-md py-4 px-6 border-b">
-        <Link href="/" className="text-blue-600 font-semibold hover:underline">
-          &larr; Kembali ke Beranda
-        </Link>
-      </nav>
+  const konten = typeof berita.konten === 'string'
+    ? JSON.parse(berita.konten)
+    : berita.konten;
 
-      <main className="max-w-3xl mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold mb-4">{berita.judul}</h1>
-        <p className="text-gray-500 mb-8">Dipublikasikan pada: {berita.tanggal}</p>
-        
-        {/* Render Gambar Cover jika admin memasukkannya */}
+  return (
+    <div className="bg-background text-foreground min-h-screen overflow-x-hidden">
+
+      {/* Top bar with back button */}
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center">
+          <Link
+            href="/#berita"
+            className="inline-flex items-center gap-2 text-sm font-semibold
+                       px-4 py-2 rounded-full border border-border
+                       bg-background hover:scale-105 transition-all duration-200
+                       text-foreground hover:border-[var(--brand)]"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Kembali
+          </Link>
+
+          {/* Brand */}
+          <div className="ml-auto flex flex-col items-end leading-none">
+            <span className="text-sm font-extrabold tracking-tight text-foreground">HKBP</span>
+            <span
+              className="text-[9px] font-semibold tracking-[0.18em] uppercase"
+              style={{ color: 'var(--brand)' }}
+            >
+              165 Tahun
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-20">
+
+        {/* Eyebrow — tanggal */}
+        <div className="flex items-center gap-2 mb-4">
+          <span
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{ background: 'var(--brand)' }}
+          />
+          <time className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {new Date(berita.tanggal).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </time>
+        </div>
+
+        {/* Judul */}
+        <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-8">
+          {berita.judul}
+        </h1>
+
+        {/* Gambar Cover */}
         {berita.gambar_cover && (
-          <img src={berita.gambar_cover} alt="Cover" className="w-full rounded-lg mb-10 shadow-md" />
+          <img
+            src={berita.gambar_cover}
+            alt={berita.judul}
+            className="w-full rounded-2xl mb-10 shadow-md object-cover max-h-[480px]"
+          />
         )}
 
-        {/* Render Blok Konten Dinamis (Teks -> Gambar -> Teks, dsb) */}
-        <div className="mt-8 space-y-6">
-          {berita.konten.map((blok: any, idx: number) => {
-            if (blok.type === 'text') {
-              return (
-                <p key={idx} className="whitespace-pre-wrap text-lg leading-relaxed text-gray-700">
-                  {blok.content}
-                </p>
-              );
-            } else if (blok.type === 'image') {
-              return (
-                <img 
-                  key={idx} 
-                  src={blok.content} 
-                  className="w-full rounded-lg shadow my-8" 
-                  alt={`Konten ilustrasi ${idx}`} 
-                />
-              );
-            }
-            return null;
-          })}
+        {/* Konten Dinamis */}
+        <div className="space-y-6">
+          {Array.isArray(konten) &&
+            konten.map((blok: any, idx: number) => {
+              if (blok.type === 'text') {
+                return (
+                  <p
+                    key={idx}
+                    className="whitespace-pre-wrap text-base sm:text-lg leading-relaxed text-muted-foreground"
+                  >
+                    {blok.content}
+                  </p>
+                );
+              }
+              if (blok.type === 'image') {
+                return (
+                  <img
+                    key={idx}
+                    src={blok.content}
+                    className="w-full rounded-xl shadow-md my-8"
+                    alt={`Ilustrasi ${idx + 1}`}
+                  />
+                );
+              }
+              return null;
+            })}
+        </div>
+
+        {/* Back button bawah */}
+        <div className="mt-16 pt-8 border-t border-border">
+          <Link
+            href="/#berita"
+            className="inline-flex items-center gap-2 text-sm font-semibold
+                       px-6 py-3 rounded-full transition-all duration-200
+                       hover:scale-105 hover:opacity-90 shadow-sm"
+            style={{ background: 'var(--brand)', color: 'var(--brand-foreground)' }}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Lihat Berita Lainnya
+          </Link>
         </div>
       </main>
     </div>
