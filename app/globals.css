@@ -45,11 +45,17 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ── Custom animations ── */
+  --animate-fade-up: fade-up 0.7s ease both;
+
+  @keyframes fade-up {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -80,6 +86,14 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ── Brand color (biru) ── */
+  --brand: oklch(0.55 0.2 250);
+  --brand-hover: oklch(0.48 0.2 250);
+  --brand-foreground: oklch(1 0 0);
+  --brand-muted: oklch(0.55 0.2 250 / 15%);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
 }
 
 .dark {
@@ -114,6 +128,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  --brand: oklch(0.65 0.2 250);
+  --brand-hover: oklch(0.72 0.2 250);
+  --brand-muted: oklch(0.65 0.2 250 / 20%);
 }
 
 @layer base {
