@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const inter = Inter({ subsets: ["latin"] });
-
 export const metadata: Metadata = {
-  title: "Company Profile",
-  description: "One page company profile website",
+  title: "HUT ke-165 HKBP",
+  description: "Huria Kristen Batak Protestan — Konser Perayaan 7 Oktober 2026",
 };
 
 export default function RootLayout({
@@ -19,9 +15,14 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
-      className={cn("scroll-smooth font-sans", "font-sans", geist.variable)}
+      className={cn("scroll-smooth")}
     >
-      <body className={inter.className}>
+      <body
+        style={{
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+        }}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

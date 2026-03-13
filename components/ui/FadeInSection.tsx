@@ -1,6 +1,4 @@
 'use client';
-// components/FadeInSection.tsx
-// Membungkus konten apapun agar muncul dengan animasi saat masuk viewport
 
 import { useEffect, useRef, ReactNode } from 'react';
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import FadeInSection from '@/components/FadeInSection';
+import FadeInSection from '@/components/ui/FadeInSection';
 
 interface BeritaItem {
   id: string;

@@ -1,7 +1,7 @@
 'use client';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import ColorBends from '@/components/ColorBends';
+import ColorBends from '@/components/ui/ColorBends';
 
 // Countdown to Oct 7, 2026
 function useCountdown(target: Date) {
